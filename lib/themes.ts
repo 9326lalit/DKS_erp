@@ -5,7 +5,12 @@ export const DEFAULT_THEME = {
   contentLayout: "full"
 } as const;
 
-export type ThemeType = typeof DEFAULT_THEME;
+export type ThemeType = {
+  preset: "default" | "underground" | "rose-garden" | "lake-view" | "sunset-glow" | "forest-whisper" | "ocean-breeze" | "lavender-dream";
+  radius: "default" | "none" | "sm" | "md" | "lg" | "xl";
+  scale: string;
+  contentLayout: string;
+};
 
 export const THEMES = [
   {
