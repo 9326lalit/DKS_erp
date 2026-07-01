@@ -1,6 +1,6 @@
 export const DEFAULT_THEME = {
-  preset: "default",
-  radius: "default",
+  preset: "rose-garden",
+  radius: "none",
   scale: "none",
   contentLayout: "full"
 } as const;
@@ -9,8 +9,8 @@ export type ThemeType = typeof DEFAULT_THEME;
 
 export const THEMES = [
   {
-    name: "Default",
-    value: "default",
+    name: "Rose Garden",
+    value: "none",
     colors: ["oklch(0.33 0 0)"]
   },
   {
@@ -19,7 +19,7 @@ export const THEMES = [
     colors: ["oklch(0.5315 0.0694 156.19)"]
   },
   {
-    name: "Rose Garden",
+    name: "Rose GardenRose Garden",
     value: "rose-garden",
     colors: ["oklch(0.5827 0.2418 12.23)"]
   },
