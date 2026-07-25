@@ -29,6 +29,7 @@ export interface Factory {
   email?: string;
   electricityMeterNo?: string;
   establishmentDate?: string;
+  createdDate?: string;
   activeStatus: "Active" | "Inactive";
   notes?: string;
 }
@@ -45,6 +46,7 @@ export interface Loom {
   rpmSpeed?: number;
   makeBrand?: string;
   yearOfPurchase?: number;
+  createdDate?: string;
   status: "Active" | "Idle" | "Under Repair";
   assignedLabourId?: string;
   assignedLabourName?: string;
@@ -64,6 +66,7 @@ export interface Fabric {
   ends: number;
   quality: string;
   unit: string;
+  createdDate?: string;
   description?: string;
   status: "Active" | "Inactive";
 }
@@ -82,7 +85,10 @@ export interface Party {
   accountNumber?: string;
   ifscCode?: string;
   openingBalance: number;
+  createdDate?: string;
   activeStatus: "Active" | "Inactive";
+  factoryId?: string;
+  factoryName?: string;
 }
 
 export interface Labour {
@@ -99,6 +105,7 @@ export interface Labour {
   dateOfBirth?: string;
   address?: string;
   joiningDate: string;
+  createdDate?: string;
   rateType: "Daily" | "Per Metre" | "Weekly" | "Contract";
   rate: number;
   bankName?: string;
@@ -116,6 +123,7 @@ export interface Employee {
   email?: string;
   address: string;
   joiningDate: string;
+  createdDate?: string;
   role: "Mukadam" | "Weaver" | "Helper" | "Mechanic" | "Electrician" | "Store Manager" | "Supervisor" | "Accountant";
   department: string;
   salaryType: "Monthly" | "Meter Based" | "Piece Based";
@@ -136,6 +144,7 @@ export interface Yarn {
   coneWeight?: number;
   rate: number;
   gst: number;
+  createdDate?: string;
   description?: string;
   status: "Active" | "Inactive";
 }
@@ -174,6 +183,18 @@ export interface ExpenseCategory {
   status: "Active" | "Inactive";
 }
 
+export interface SizingMill {
+  id: string;
+  millCode: string;
+  millName: string;
+  contactPerson?: string;
+  mobileNumber: string;
+  gstNumber?: string;
+  address: string;
+  createdDate?: string;
+  activeStatus: "Active" | "Inactive";
+}
+
 // ----------------------------------------------------
 // STORE STATE INTERFACE
 // ----------------------------------------------------
@@ -191,9 +212,15 @@ interface MastersState {
   labour: Labour[];
   employees: Employee[];
   expenseCategories: ExpenseCategory[];
+  sizingMills: SizingMill[];
 
   setHydrated: (val: boolean) => void;
   initializeSeeds: () => void;
+
+  // Sizing Mill CRUD
+  createSizingMill: (mill: SizingMill) => void;
+  updateSizingMill: (mill: SizingMill) => void;
+  deleteSizingMill: (id: string) => void;
 
   // Factory CRUD
   createFactory: (factory: Factory) => void;
@@ -260,11 +287,10 @@ const getInitialSeeds = () => {
     {
       id: "FAC-ID-001",
       factoryId: "FAC-001",
-      factoryName: "Shivaji Weaving Factory",
-      ownerName: "Shivaji Khairnar",
-      plotNo: "Plot No. 45-A",
-      addressLine1: "MIDC Industrial Area, Sector-3",
-      addressLine2: "Near Power House",
+      factoryName: "Dhandai Textiles (Main Shed)",
+      ownerName: "Bhushan Khairnar",
+      plotNo: "Plot 18",
+      addressLine1: "MIDC Industrial Zone",
       cityVillage: "Ichalkaranji",
       taluka: "Shirol",
       district: "Kolhapur",
@@ -274,21 +300,19 @@ const getInitialSeeds = () => {
       shedWidth: 60,
       totalArea: 7200,
       shedType: "RCC",
-      noOfFloors: 1,
-      gstNumber: "27AAIPK1234F1Z5",
-      registrationNo: "MH-MSME-2024-0456",
+      noOfFloors: 2,
       contactNumber: "+91 98230 11223",
-      email: "shivaji.factory@gmail.com",
-      electricityMeterNo: "EB-4521-KOL",
+      email: "bhushan@dhandaitextiles.com",
+      electricityMeterNo: "EB-4521-ICH",
       establishmentDate: "2018-04-01",
       activeStatus: "Active",
-      notes: "Primary weaving shed — 18 power looms operational"
+      notes: "Primary weaving shed — 24 power looms operational"
     },
     {
       id: "FAC-ID-002",
       factoryId: "FAC-002",
-      factoryName: "Yogesh Looming Works",
-      ownerName: "Yogesh Jakhotya",
+      factoryName: "Dhandai Textiles Unit-II",
+      ownerName: "Bhushan Khairnar",
       plotNo: "Gat No. 102",
       addressLine1: "Ward No. 12, Textile Zone",
       cityVillage: "Ichalkaranji",
@@ -302,25 +326,37 @@ const getInitialSeeds = () => {
       shedType: "Tin",
       noOfFloors: 1,
       contactNumber: "+91 98765 44321",
+      email: "bhushan@dhandaitextiles.com",
       activeStatus: "Active",
-      notes: "Secondary unit — handloom and rapier setup"
+      notes: "Secondary rapier weaving shed — 12 looms operational"
     }
   ];
 
-  const seededLooms: Loom[] = [
-    { id: "LOM-ID-001", loomId: "LOM-001", factoryId: "FAC-ID-001", factoryName: "Shivaji Weaving Factory", loomNumber: "L-001", loomType: "Power Loom", reedCount: 120, widthInches: 60, rpmSpeed: 680, makeBrand: "Picanol", yearOfPurchase: 2021, status: "Active" },
-    { id: "LOM-ID-002", loomId: "LOM-002", factoryId: "FAC-ID-001", factoryName: "Shivaji Weaving Factory", loomNumber: "L-002", loomType: "Power Loom", reedCount: 120, widthInches: 60, rpmSpeed: 660, makeBrand: "Picanol", yearOfPurchase: 2021, status: "Active" },
-    { id: "LOM-ID-003", loomId: "LOM-003", factoryId: "FAC-ID-001", factoryName: "Shivaji Weaving Factory", loomNumber: "L-003", loomType: "Rapier", reedCount: 100, widthInches: 58, rpmSpeed: 580, makeBrand: "Toyota", yearOfPurchase: 2022, status: "Idle" },
-    { id: "LOM-ID-004", loomId: "LOM-004", factoryId: "FAC-ID-001", factoryName: "Shivaji Weaving Factory", loomNumber: "L-004", loomType: "Power Loom", reedCount: 120, widthInches: 60, rpmSpeed: 700, makeBrand: "Picanol", yearOfPurchase: 2023, status: "Under Repair" },
-    { id: "LOM-ID-005", loomId: "LOM-005", factoryId: "FAC-ID-002", factoryName: "Yogesh Looming Works", loomNumber: "L-001", loomType: "Handloom", reedCount: 80, widthInches: 45, status: "Active", makeBrand: "Local Make", yearOfPurchase: 2019 },
-    { id: "LOM-ID-006", loomId: "LOM-006", factoryId: "FAC-ID-002", factoryName: "Yogesh Looming Works", loomNumber: "L-002", loomType: "Shuttle", reedCount: 90, widthInches: 50, rpmSpeed: 200, status: "Active", makeBrand: "Local Make", yearOfPurchase: 2020 },
-  ];
+  // Generate 36 Power Looms (24 in Main Shed, 12 in Unit-II)
+  const seededLooms: Loom[] = Array.from({ length: 36 }, (_, i) => {
+    const loomNum = i + 1;
+    const isMainShed = loomNum <= 24;
+    return {
+      id: `LOM-ID-${String(loomNum).padStart(3, "0")}`,
+      loomId: `LOM-${String(loomNum).padStart(3, "0")}`,
+      factoryId: isMainShed ? "FAC-ID-001" : "FAC-ID-002",
+      factoryName: isMainShed ? "Dhandai Textiles (Main Shed)" : "Dhandai Textiles Unit-II",
+      loomNumber: `L-${String(loomNum).padStart(3, "0")}`,
+      loomType: loomNum % 3 === 0 ? "Rapier" : "Power Loom",
+      reedCount: 120,
+      widthInches: 60,
+      rpmSpeed: 680,
+      makeBrand: "Picanol",
+      yearOfPurchase: 2021 + (loomNum % 3),
+      status: loomNum % 12 === 0 ? "Under Repair" : "Active"
+    };
+  });
 
   const seededFabrics: Fabric[] = [
     {
       id: "FAB-ID-001",
       fabricCode: "FAB-001",
-      fabricName: "Rustic Cotton Poplin",
+      fabricName: "Dhandai Premium Cotton Poplin",
       construction: "60x60 / 132x72",
       width: 44,
       gsm: 120,
@@ -330,7 +366,7 @@ const getInitialSeeds = () => {
       ends: 132,
       quality: "Premium",
       unit: "Meters",
-      description: "Soft cotton fabric ideal for shirting and fashion wear.",
+      description: "Dhandai Textiles premium cotton fabric for shirting.",
       status: "Active"
     }
   ];
@@ -338,186 +374,96 @@ const getInitialSeeds = () => {
   const seededParties: Party[] = [
     {
       id: "PRT-ID-001",
-      partyCode: "PRT-S001",
-      partyName: "Yogesh Jakhotya Spinners",
-      partyType: "Supplier",
-      contactPerson: "Yogesh Jakhotya",
-      mobileNumber: "+91 98765 43210",
-      gstNumber: "27AAIJY1234K1Z5",
-      panNumber: "AAIJY1234K",
-      address: "Plot 22, Yarn Market, Ichalkaranji, Kolhapur - 416115",
-      bankName: "Bank of Maharashtra",
-      accountNumber: "60234512345",
-      ifscCode: "MAHB0001234",
+      partyCode: "PRT-B001",
+      partyName: "Dhandai Textiles (Own Firm)",
+      partyType: "Buyer",
+      contactPerson: "Bhushan Khairnar",
+      mobileNumber: "+91 98230 11223",
+      gstNumber: "27AAIPK1234F1Z5",
+      panNumber: "AAIPK1234F",
+      address: "Plot 18, MIDC Industrial Zone, Ichalkaranji - 416115",
       openingBalance: 0,
       activeStatus: "Active"
     },
     {
       id: "PRT-ID-002",
+      partyCode: "PRT-S001",
+      partyName: "Surat Yarn Mills Pvt Ltd",
+      partyType: "Supplier",
+      contactPerson: "Suresh Sharma",
+      mobileNumber: "+91 98765 43210",
+      gstNumber: "24AAIJY1234K1Z5",
+      panNumber: "AAIJY1234K",
+      address: "Ring Road Yarn Market, Surat, Gujarat - 395002",
+      openingBalance: 0,
+      activeStatus: "Active"
+    },
+    {
+      id: "PRT-ID-003",
       partyCode: "PRT-S002",
-      partyName: "Om Yarn Traders",
+      partyName: "Ichalkaranji Cotton Suppliers",
       partyType: "Supplier",
       contactPerson: "Sanjay Patil",
       mobileNumber: "+91 98341 56789",
       gstNumber: "27AAIOY1234P1Z3",
       panNumber: "AAIOY1234P",
       address: "Shop No. 5, Textile Complex, Ichalkaranji - 416115",
-      openingBalance: 25000,
+      openingBalance: 0,
       activeStatus: "Active"
     },
     {
-      id: "PRT-ID-003",
+      id: "PRT-ID-004",
       partyCode: "PRT-S003",
-      partyName: "Shree Ganesh Yarn Depot",
+      partyName: "Reliance Yarn Industries",
       partyType: "Supplier",
-      contactPerson: "Rahul Shinde",
+      contactPerson: "Rajesh Varma",
       mobileNumber: "+91 91234 56789",
       gstNumber: "27AAIGS1234R1Z7",
       panNumber: "AAIGS1234R",
       address: "Gat No. 8, Yarn Colony, Ichalkaranji - 416115",
       openingBalance: 0,
       activeStatus: "Active"
-    },
-    {
-      id: "PRT-ID-004",
-      partyCode: "PRT-B001",
-      partyName: "Shivaji Khairnar (Own Firm)",
-      partyType: "Buyer",
-      contactPerson: "Shivaji Khairnar",
-      mobileNumber: "+91 98230 11223",
-      gstNumber: "27AAIPK1234F1Z5",
-      panNumber: "AAIPK1234F",
-      address: "Plot No. 45-A, MIDC, Ichalkaranji - 416115",
-      openingBalance: 0,
-      activeStatus: "Active"
-    },
-    {
-      id: "PRT-ID-005",
-      partyCode: "PRT-B002",
-      partyName: "Balaji Textiles Pvt Ltd",
-      partyType: "Buyer",
-      contactPerson: "Suresh Balaji",
-      mobileNumber: "+91 99001 23456",
-      gstNumber: "27AAIBP1234S1Z2",
-      address: "Surat Textile Hub, Surat, Gujarat - 395001",
-      openingBalance: 0,
-      activeStatus: "Active"
-    },
-    {
-      id: "PRT-ID-006",
-      partyCode: "PRT-LC001",
-      partyName: "Ramesh Labour Contractor",
-      partyType: "Labour Contractor",
-      contactPerson: "Ramesh Patil",
-      mobileNumber: "+91 97654 32100",
-      address: "Ward No. 7, Ichalkaranji - 416115",
-      openingBalance: 0,
-      activeStatus: "Active"
     }
   ];
 
   const seededLabour: Labour[] = [
-    {
-      id: "LAB-ID-001",
-      labourId: "LAB-001",
-      fullName: "Mahadev Koli",
-      labourType: "Weaver",
-      linkedFactoryId: "FAC-ID-001",
-      linkedFactoryName: "Shivaji Weaving Factory",
-      linkedLoomId: "LOM-ID-001",
-      linkedLoomNumber: "L-001",
-      mobileNumber: "+91 98765 00001",
-      aadhaarNumber: "XXXX-XXXX-1234",
-      joiningDate: "2022-06-01",
-      rateType: "Per Metre",
-      rate: 8.5,
-      activeStatus: "Active"
-    },
-    {
-      id: "LAB-ID-002",
-      labourId: "LAB-002",
-      fullName: "Suresh Kadam",
-      labourType: "Weaver",
-      linkedFactoryId: "FAC-ID-001",
-      linkedFactoryName: "Shivaji Weaving Factory",
-      linkedLoomId: "LOM-ID-002",
-      linkedLoomNumber: "L-002",
-      mobileNumber: "+91 98765 00002",
-      joiningDate: "2023-01-15",
-      rateType: "Per Metre",
-      rate: 8.5,
-      activeStatus: "Active"
-    },
-    {
-      id: "LAB-ID-003",
-      labourId: "LAB-003",
-      fullName: "Ganesh Mane",
-      labourType: "Helper",
-      linkedFactoryId: "FAC-ID-001",
-      linkedFactoryName: "Shivaji Weaving Factory",
-      mobileNumber: "+91 98765 00003",
-      joiningDate: "2022-09-01",
-      rateType: "Daily",
-      rate: 450,
-      activeStatus: "Active"
-    },
-    {
-      id: "LAB-ID-004",
-      labourId: "LAB-004",
-      fullName: "Vijay Powar",
-      labourType: "Sizing Worker",
-      linkedFactoryId: "FAC-ID-002",
-      linkedFactoryName: "Yogesh Looming Works",
-      mobileNumber: "+91 97654 00004",
-      joiningDate: "2021-03-10",
-      rateType: "Daily",
-      rate: 500,
-      activeStatus: "Active"
-    },
-    {
-      id: "LAB-ID-005",
-      labourId: "LAB-005",
-      fullName: "Prakash Shinde",
-      labourType: "Contractor",
-      linkedFactoryId: "FAC-ID-001",
-      linkedFactoryName: "Shivaji Weaving Factory",
-      mobileNumber: "+91 96543 00005",
-      joiningDate: "2024-01-01",
-      rateType: "Contract",
-      rate: 35000,
-      activeStatus: "Active"
-    }
+    { id: "LAB-ID-001", labourId: "LAB-001", fullName: "Mahadev Koli", labourType: "Weaver", linkedFactoryId: "FAC-ID-001", linkedFactoryName: "Dhandai Textiles (Main Shed)", linkedLoomId: "LOM-ID-001", linkedLoomNumber: "L-001, L-002", mobileNumber: "+91 98230 11223", joiningDate: "2022-06-01", rateType: "Per Metre", rate: 8.5, activeStatus: "Active" },
+    { id: "LAB-ID-002", labourId: "LAB-002", fullName: "Ganesh Mane", labourType: "Weaver", linkedFactoryId: "FAC-ID-001", linkedFactoryName: "Dhandai Textiles (Main Shed)", linkedLoomId: "LOM-ID-003", linkedLoomNumber: "L-003, L-004", mobileNumber: "+91 98230 22334", joiningDate: "2022-08-15", rateType: "Per Metre", rate: 8.5, activeStatus: "Active" },
+    { id: "LAB-ID-003", labourId: "LAB-003", fullName: "Mohammad Bhai", labourType: "Weaver", linkedFactoryId: "FAC-ID-001", linkedFactoryName: "Dhandai Textiles (Main Shed)", linkedLoomId: "LOM-ID-005", linkedLoomNumber: "L-005, L-006", mobileNumber: "+91 98230 33445", joiningDate: "2021-04-10", rateType: "Per Metre", rate: 9.5, activeStatus: "Active" },
+    { id: "LAB-ID-004", labourId: "LAB-004", fullName: "Santosh Kadam", labourType: "Helper", linkedFactoryId: "FAC-ID-001", linkedFactoryName: "Dhandai Textiles (Main Shed)", linkedLoomId: "LOM-ID-007", linkedLoomNumber: "L-007, L-008", mobileNumber: "+91 98230 44556", joiningDate: "2023-01-05", rateType: "Daily", rate: 650, activeStatus: "Active" },
+    { id: "LAB-ID-005", labourId: "LAB-005", fullName: "Dattatray Shinde", labourType: "Contractor", linkedFactoryId: "FAC-ID-001", linkedFactoryName: "Dhandai Textiles (Main Shed)", linkedLoomId: "LOM-ID-009", linkedLoomNumber: "L-009, L-010", mobileNumber: "+91 98230 55667", joiningDate: "2020-11-20", rateType: "Contract", rate: 25000, activeStatus: "Active" }
   ];
 
   const seededYarns: Yarn[] = [
-    { id: "YRN-ID-001", yarnCode: "YRN-001", yarnName: "40s Cotton", material: "Cotton", count: "40s", brand: "Vardhman", color: "Natural", unit: "KG", rate: 185, gst: 5, status: "Active" },
-    { id: "YRN-ID-002", yarnCode: "YRN-002", yarnName: "150D Polyester", material: "Polyester", count: "150D", denier: "150D", brand: "Reliance", color: "White", unit: "KG", rate: 120, gst: 12, status: "Active" },
-    { id: "YRN-ID-003", yarnCode: "YRN-003", yarnName: "60s Cotton", material: "Cotton", count: "60s", brand: "Nahar", color: "Natural", unit: "KG", rate: 210, gst: 5, status: "Active" }
+    { id: "YRN-ID-001", yarnCode: "YRN-001", yarnName: "40s Cotton Warp", material: "Cotton", count: "40s", brand: "Vardhman", color: "Natural", unit: "KG", rate: 280, gst: 12, status: "Active" },
+    { id: "YRN-ID-002", yarnCode: "YRN-002", yarnName: "2/40s PC Weft", material: "Polyester", count: "2/40s", brand: "Reliance", color: "White", unit: "KG", rate: 240, gst: 12, status: "Active" }
   ];
 
   const seededShifts: Shift[] = [
-    { id: "SHF-ID-001", shiftCode: "SHF-001", shiftName: "Morning Shift", startTime: "06:00 AM", endTime: "02:00 PM", breakTime: "30 Min", status: "Active" },
-    { id: "SHF-ID-002", shiftCode: "SHF-002", shiftName: "Night Shift", startTime: "10:00 PM", endTime: "06:00 AM", breakTime: "30 Min", status: "Active" }
+    { id: "SHF-ID-001", shiftCode: "SHF-001", shiftName: "Day Shift", startTime: "08:00 AM", endTime: "08:00 PM", breakTime: "60 Min", status: "Active" },
+    { id: "SHF-ID-002", shiftCode: "SHF-002", shiftName: "Night Shift", startTime: "08:00 PM", endTime: "08:00 AM", breakTime: "60 Min", status: "Active" }
   ];
 
   const seededWarehouses: Warehouse[] = [
-    { id: "WH-ID-001", warehouseCode: "WH-001", warehouseName: "Yarn Godown A", location: "Factory Block-1", type: "Yarn", status: "Active" },
-    { id: "WH-ID-002", warehouseCode: "WH-002", warehouseName: "Fabric Roll Store", location: "Factory Block-2", type: "Grey Fabric", status: "Active" },
-    { id: "WH-ID-003", warehouseCode: "WH-003", warehouseName: "Warp Beam Rack", location: "Sizing Unit", type: "Beam", status: "Active" }
+    { id: "WH-ID-001", warehouseCode: "WH-001", warehouseName: "Dhandai Yarn Store", location: "Main Factory", type: "Yarn", status: "Active" },
+    { id: "WH-ID-002", warehouseCode: "WH-002", warehouseName: "Dhandai Beam Store", location: "Sizing Yard", type: "Beam", status: "Active" }
   ];
 
   const seededUnits: Unit[] = [
     { id: "UOM-ID-001", code: "KG", name: "Kilogram" },
     { id: "UOM-ID-002", code: "MTR", name: "Meter" },
     { id: "UOM-ID-003", code: "CNE", name: "Cone" },
-    { id: "UOM-ID-004", code: "BM", name: "Beam" },
-    { id: "UOM-ID-005", code: "RL", name: "Roll" }
+    { id: "UOM-ID-004", code: "BM", name: "Beam" }
   ];
 
   const seededExpenseCats: ExpenseCategory[] = [
-    { id: "EXP-01", categoryCode: "EXP-ELEC", categoryName: "Electricity", description: "Loom motors power consumption utility bills", status: "Active" },
-    { id: "EXP-02", categoryCode: "EXP-SAL", categoryName: "Salary", description: "Office administrative and supervisors base payrolls", status: "Active" },
-    { id: "EXP-03", categoryCode: "EXP-REP", categoryName: "Repair", description: "Loom spare parts purchase and accessories repairs", status: "Active" }
+    { id: "EXP-01", categoryCode: "EXP-ELEC", categoryName: "Electricity", description: "Loom motors power consumption bills", status: "Active" },
+    { id: "EXP-02", categoryCode: "EXP-SAL", categoryName: "Salary", description: "Supervisors and staff payrolls", status: "Active" }
+  ];
+
+  const seededSizingMills: SizingMill[] = [
+    { id: "SZM-ID-001", millCode: "SZM-001", millName: "Sumit Sizing Works", contactPerson: "Sumit Patil", mobileNumber: "+91 99220 11223", address: "Gat No. 14, Sizing Zone, Ichalkaranji", activeStatus: "Active" },
+    { id: "SZM-ID-002", millCode: "SZM-002", millName: "Sumit Warping & Sizing Unit-2", contactPerson: "Sumit Patil", mobileNumber: "+91 99220 44556", address: "Plot 8, Sizing Complex, Ichalkaranji", activeStatus: "Active" }
   ];
 
   return {
@@ -531,7 +477,8 @@ const getInitialSeeds = () => {
     units: seededUnits,
     labour: seededLabour,
     employees: [],
-    expenseCategories: seededExpenseCats
+    expenseCategories: seededExpenseCats,
+    sizingMills: seededSizingMills
   };
 };
 
@@ -554,6 +501,7 @@ export const useMastersStore = create<MastersState>()(
       labour: [],
       employees: [],
       expenseCategories: [],
+      sizingMills: [],
 
       setHydrated: (val) => set({ isHydrated: val }),
 
@@ -681,6 +629,17 @@ export const useMastersStore = create<MastersState>()(
       deleteExpenseCategory: (id) =>
         set((state) => ({
           expenseCategories: state.expenseCategories.filter((c) => c.id !== id)
+        })),
+
+      // CRUD: Sizing Mills
+      createSizingMill: (mill) => set((state) => ({ sizingMills: [mill, ...state.sizingMills] })),
+      updateSizingMill: (mill) =>
+        set((state) => ({
+          sizingMills: state.sizingMills.map((m) => (m.id === mill.id ? mill : m))
+        })),
+      deleteSizingMill: (id) =>
+        set((state) => ({
+          sizingMills: state.sizingMills.filter((m) => m.id !== id)
         })),
     }),
     {

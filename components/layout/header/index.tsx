@@ -5,6 +5,7 @@ import { PanelLeftIcon } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import Notifications from "@/components/layout/header/notifications";
 import Search from "@/components/layout/header/search";
+import LanguageSwitch from "@/components/layout/header/language-switch";
 import ThemeSwitch from "@/components/layout/header/theme-switch";
 import UserMenu from "@/components/layout/header/user-menu";
 import { ThemeCustomizerPanel } from "@/components/theme-customizer";
@@ -24,6 +25,7 @@ export function SiteHeader() {
         <Search />
 
         <div className="ml-auto flex items-center gap-2">
+          <LanguageSwitch />
           <Notifications />
           <ThemeSwitch />
           <ThemeCustomizerPanel />

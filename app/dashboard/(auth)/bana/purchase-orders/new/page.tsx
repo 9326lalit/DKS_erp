@@ -2,13 +2,12 @@
 
 import React from "react";
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ArrowLeft, Calculator } from "lucide-react";
-
+import { ArrowLeft, Calculator, Plus } from "lucide-react";
 import { banaApiService } from "@/lib/services/bana-api";
 import { mastersApiService } from "@/lib/services/masters-api";
 import { numberToWords } from "@/lib/store/use-tana-store";
@@ -32,12 +31,22 @@ const HSN_RATES_BANA = [
 const PAYMENT_TERMS = ["Advance Payment", "Cash on Delivery", "15 Days Credit", "30 Days Credit", "45 Days Credit", "60 Days Credit"];
 
 const schema = z.object({
-  poDate: z.string().min(1), purchaseFromId: z.string().min(1), purchaseFromName: z.string(),
-  purchaseToId: z.string().min(1), purchaseToName: z.string(), deliveryAddress: z.string().min(5),
-  expectedDeliveryDate: z.string().optional(), paymentTerms: z.string().min(1), remarks: z.string().optional(),
-  itemName: z.string().min(2), hsnCode: z.string().min(4),
-  totalBagsOrdered: z.number().min(1), perBagWeightKg: z.number().min(0.1),
-  ratePerKg: z.number().min(0.01), cgstPercent: z.number(), sgstPercent: z.number()
+  poDate: z.string().min(1),
+  purchaseFromId: z.string().min(1),
+  purchaseFromName: z.string(),
+  purchaseToId: z.string().min(1),
+  purchaseToName: z.string(),
+  deliveryAddress: z.string().min(5),
+  expectedDeliveryDate: z.string().optional(),
+  paymentTerms: z.string().min(1),
+  remarks: z.string().optional(),
+  items: z.array(z.object({
+    itemName: z.string().min(2),
+    hsnCode: z.string().min(4),
+    totalBagsOrdered: z.number().min(1),
+    perBagWeightKg: z.number().min(0.1),
+    ratePerKg: z.number().min(0.01)
+  })).min(1)
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -46,46 +55,128 @@ export default function NewBanaPOPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { data: parties = [] } = useQuery({ queryKey: ["parties"], queryFn: () => mastersApiService.getParties() });
+  const { data: factories = [] } = useQuery({ queryKey: ["factories"], queryFn: () => mastersApiService.getFactories() });
   const suppliers = parties.filter(p => p.partyType === "Supplier" && p.activeStatus === "Active");
-  const buyers = parties.filter(p => p.partyType === "Buyer" && p.activeStatus === "Active");
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { poDate: new Date().toISOString().split("T")[0], purchaseFromId: "", purchaseFromName: "", purchaseToId: "", purchaseToName: "", deliveryAddress: "", paymentTerms: "30 Days Credit", itemName: "30s Cotton Weft Yarn", hsnCode: "5205", totalBagsOrdered: 0, perBagWeightKg: 50, ratePerKg: 0, cgstPercent: 6, sgstPercent: 6 }
+    defaultValues: {
+      poDate: new Date().toISOString().split("T")[0],
+      purchaseFromId: "", purchaseFromName: "",
+      purchaseToId: "", purchaseToName: "",
+      deliveryAddress: "", paymentTerms: "30 Days Credit",
+      items: [
+        { itemName: "30s Cotton Weft Yarn", hsnCode: "5205", totalBagsOrdered: 10, perBagWeightKg: 50, ratePerKg: 260 }
+      ]
+    }
   });
 
-  const bags = form.watch("totalBagsOrdered") || 0;
-  const perBagWeight = form.watch("perBagWeightKg") || 0;
-  const rate = form.watch("ratePerKg") || 0;
-  const cgst = form.watch("cgstPercent") || 0;
-  const sgst = form.watch("sgstPercent") || 0;
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: "items"
+  });
 
-  const totalWeightKg = bags * perBagWeight;
-  const grossAmount = totalWeightKg * rate;
-  const cgstAmount = grossAmount * (cgst / 100);
-  const sgstAmount = grossAmount * (sgst / 100);
-  const netPayable = grossAmount + cgstAmount + sgstAmount;
+  const watchedItems = form.watch("items") || [];
+
+  const computedItems = watchedItems.map(item => {
+    const bags = item.totalBagsOrdered || 0;
+    const perBagWeight = item.perBagWeightKg || 0;
+    const rate = item.ratePerKg || 0;
+
+    const totalWeightKg = bags * perBagWeight;
+    const grossAmount = totalWeightKg * rate;
+    const totalTaxAmount = 0;
+    const netPayable = grossAmount;
+
+    return {
+      totalWeightKg,
+      grossAmount,
+      totalTaxAmount,
+      netPayable
+    };
+  });
+
+  const totals = {
+    totalBagsOrdered: 0,
+    totalWeightKg: 0,
+    grossAmount: 0,
+    totalTaxAmount: 0,
+    netPayable: 0
+  };
+
+  computedItems.forEach((item, idx) => {
+    totals.totalBagsOrdered += watchedItems[idx]?.totalBagsOrdered || 0;
+    totals.totalWeightKg += item.totalWeightKg;
+    totals.grossAmount += item.grossAmount;
+    totals.totalTaxAmount += item.totalTaxAmount;
+    totals.netPayable += item.netPayable;
+  });
 
   const mutation = useMutation({
     mutationFn: (data: any) => banaApiService.createPO(data),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["bana-pos"] }); toast.success("Bana PO created!"); router.push("/dashboard/bana/purchase-orders"); }
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["bana-pos"] });
+      toast.success("Bana PO created!");
+      router.push("/dashboard/bana/purchase-orders");
+    }
   });
 
   const onSubmit = (values: FormValues) => {
     const year = new Date().getFullYear();
     const seq = Date.now() % 10000;
+
+    const finalItems = values.items.map((item, idx) => {
+      const computed = computedItems[idx];
+      return {
+        id: `BANA-PO-ITEM-${Date.now()}-${idx}`,
+        ...item,
+        totalWeightKg: parseFloat(computed.totalWeightKg.toFixed(2)),
+        grossAmount: parseFloat(computed.grossAmount.toFixed(2)),
+        cgstPercent: 0,
+        sgstPercent: 0,
+        cgstAmount: 0,
+        sgstAmount: 0,
+        totalTaxAmount: 0,
+        netPayable: parseFloat(computed.netPayable.toFixed(2))
+      };
+    });
+
+    const primaryItem = finalItems[0];
+    const itemSummaryName = finalItems.length > 1
+      ? `${primaryItem.itemName} (+ ${finalItems.length - 1} more)`
+      : primaryItem.itemName;
+
     mutation.mutate({
       id: `BANA-PO-ID-${Date.now()}`,
       poNumber: `BANA-PO-${year}-${String(seq).padStart(4, "0")}`,
-      materialType: "Bana" as const, ...values,
-      totalWeightKg: parseFloat(totalWeightKg.toFixed(2)),
-      grossAmount: parseFloat(grossAmount.toFixed(2)),
-      cgstAmount: parseFloat(cgstAmount.toFixed(2)),
-      sgstAmount: parseFloat(sgstAmount.toFixed(2)),
-      totalTaxAmount: parseFloat((cgstAmount + sgstAmount).toFixed(2)),
-      netPayable: parseFloat(netPayable.toFixed(2)),
-      amountInWords: numberToWords(Math.round(netPayable)),
-      bagsReceivedSoFar: 0, status: "Open" as const
+      materialType: "Bana" as const,
+      poDate: values.poDate,
+      purchaseFromId: values.purchaseFromId,
+      purchaseFromName: values.purchaseFromName,
+      purchaseToId: values.purchaseToId,
+      purchaseToName: values.purchaseToName,
+      deliveryAddress: values.deliveryAddress,
+      expectedDeliveryDate: values.expectedDeliveryDate,
+      paymentTerms: values.paymentTerms,
+      remarks: values.remarks,
+
+      itemName: itemSummaryName,
+      hsnCode: primaryItem.hsnCode,
+      totalBagsOrdered: totals.totalBagsOrdered,
+      perBagWeightKg: primaryItem.perBagWeightKg,
+      totalWeightKg: parseFloat(totals.totalWeightKg.toFixed(2)),
+      ratePerKg: primaryItem.ratePerKg,
+      grossAmount: parseFloat(totals.grossAmount.toFixed(2)),
+      cgstPercent: 0,
+      sgstPercent: 0,
+      cgstAmount: 0,
+      sgstAmount: 0,
+      totalTaxAmount: 0,
+      netPayable: parseFloat(totals.netPayable.toFixed(2)),
+      amountInWords: numberToWords(Math.round(totals.netPayable)),
+      items: finalItems,
+      bagsReceivedSoFar: 0,
+      status: "Open" as const
     });
   };
 
@@ -123,10 +214,29 @@ export default function NewBanaPOPage() {
                 {form.formState.errors.purchaseFromId && <p className="text-[10px] text-destructive">{form.formState.errors.purchaseFromId.message}</p>}
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold">Purchase To (Buyer / Own Firm) *</Label>
-                <Select onValueChange={(v) => { form.setValue("purchaseToId", v); form.setValue("purchaseToName", buyers.find(b => b.id === v)?.partyName || ""); }} value={form.watch("purchaseToId")}>
-                  <SelectTrigger><SelectValue placeholder="Select buyer" /></SelectTrigger>
-                  <SelectContent>{buyers.map(b => <SelectItem key={b.id} value={b.id}>{b.partyName}</SelectItem>)}</SelectContent>
+                <Label className="text-xs font-semibold">Purchase To (Factory) *</Label>
+                <Select
+                  onValueChange={(v) => {
+                    const f = factories.find(fact => fact.id === v);
+                    if (f) {
+                      form.setValue("purchaseToId", v);
+                      form.setValue("purchaseToName", f.factoryName);
+                      const addr = [
+                        f.plotNo ? `Plot No. ${f.plotNo}` : "",
+                        f.addressLine1,
+                        f.addressLine2,
+                        f.cityVillage,
+                        f.district,
+                        f.state,
+                        f.pincode ? `PIN - ${f.pincode}` : ""
+                      ].filter(Boolean).join(", ");
+                      form.setValue("deliveryAddress", addr);
+                    }
+                  }}
+                  value={form.watch("purchaseToId")}
+                >
+                  <SelectTrigger><SelectValue placeholder="Select factory" /></SelectTrigger>
+                  <SelectContent>{factories.map(f => <SelectItem key={f.id} value={f.id}>{f.factoryName}</SelectItem>)}</SelectContent>
                 </Select>
                 {form.formState.errors.purchaseToId && <p className="text-[10px] text-destructive">{form.formState.errors.purchaseToId.message}</p>}
               </div>
@@ -136,60 +246,134 @@ export default function NewBanaPOPage() {
           </CardContent>
         </Card>
 
+        {/* Dynamic Line Items */}
         <Card className="border-border/40 shadow-sm">
-          <CardHeader className="pb-4 bg-muted/5 border-b border-border/10"><CardTitle className="text-sm font-bold">Item Details & GST</CardTitle></CardHeader>
-          <CardContent className="pt-5 space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-1.5"><Label className="text-xs font-semibold">Item Name *</Label><Input {...form.register("itemName")} placeholder="e.g. 30s Cotton Weft Yarn" /></div>
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold">HSN Code *</Label>
-                <Select onValueChange={(v) => { const h = HSN_RATES_BANA.find(x => x.hsn === v); if (h) { form.setValue("hsnCode", v); form.setValue("cgstPercent", h.cgst); form.setValue("sgstPercent", h.sgst); } }} value={form.watch("hsnCode")}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>{HSN_RATES_BANA.map(h => <SelectItem key={h.hsn} value={h.hsn}>{h.hsn} — {h.desc}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="grid gap-4 sm:grid-cols-3">
-              <div className="space-y-1.5"><Label className="text-xs font-semibold">Total Bags *</Label><Input type="number" {...form.register("totalBagsOrdered", { valueAsNumber: true })} /></div>
-              <div className="space-y-1.5"><Label className="text-xs font-semibold">Per Bag Weight (KG) *</Label><Input type="number" step="0.01" {...form.register("perBagWeightKg", { valueAsNumber: true })} /></div>
-              <div className="space-y-1.5"><Label className="text-xs font-semibold">Total Weight (Auto)</Label><div className="h-10 px-3 flex items-center rounded-md border bg-muted/30 text-sm font-bold">{totalWeightKg > 0 ? `${totalWeightKg.toLocaleString()} KG` : "—"}</div></div>
-            </div>
-            <div className="grid gap-4 sm:grid-cols-3">
-              <div className="space-y-1.5"><Label className="text-xs font-semibold">Rate per KG (₹) *</Label><Input type="number" step="0.01" {...form.register("ratePerKg", { valueAsNumber: true })} /></div>
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold">CGST %</Label>
-                <Select onValueChange={(v) => form.setValue("cgstPercent", parseFloat(v))} value={String(form.watch("cgstPercent"))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent><SelectItem value="2.5">2.5%</SelectItem><SelectItem value="6">6%</SelectItem><SelectItem value="9">9%</SelectItem></SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold">SGST %</Label>
-                <Select onValueChange={(v) => form.setValue("sgstPercent", parseFloat(v))} value={String(form.watch("sgstPercent"))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent><SelectItem value="2.5">2.5%</SelectItem><SelectItem value="6">6%</SelectItem><SelectItem value="9">9%</SelectItem></SelectContent>
-                </Select>
-              </div>
-            </div>
-            {grossAmount > 0 && (
-              <div className="bg-muted/10 rounded-lg border border-border/20 p-4 space-y-2">
-                <div className="flex items-center gap-1.5 mb-2"><Calculator className="h-3.5 w-3.5 text-muted-foreground" /><span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Tax Summary</span></div>
+          <CardHeader className="pb-4 bg-muted/5 border-b border-border/10 flex flex-row justify-between items-center">
+            <CardTitle className="text-sm font-bold">Item Details</CardTitle>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => append({ itemName: "", hsnCode: "5205", totalBagsOrdered: 0, perBagWeightKg: 50, ratePerKg: 0 })}
+              className="h-8 gap-1.5 cursor-pointer text-xs"
+            >
+              <Plus className="h-3 w-3" /> Add Item
+            </Button>
+          </CardHeader>
+          <CardContent className="pt-5 space-y-6">
+            {fields.map((field, index) => {
+              const item = computedItems[index] || { totalWeightKg: 0, grossAmount: 0, netPayable: 0 };
+              return (
+                <div key={field.id} className="border border-border/60 rounded-lg p-4 bg-muted/5 space-y-4 relative">
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-xs font-bold text-muted-foreground">Item #{index + 1}</span>
+                    {fields.length > 1 && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => remove(index)}
+                        className="h-7 text-xs text-destructive hover:bg-destructive/5 cursor-pointer"
+                      >
+                        Remove
+                      </Button>
+                    )}
+                  </div>
+
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-semibold">Item Name *</Label>
+                      <Input {...form.register(`items.${index}.itemName`)} placeholder="e.g. 30s Cotton Weft Yarn" />
+                      {form.formState.errors.items?.[index]?.itemName && (
+                        <p className="text-[10px] text-destructive">{form.formState.errors.items[index]?.itemName?.message}</p>
+                      )}
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-semibold">HSN Code *</Label>
+                      <Select
+                        onValueChange={(v) => {
+                          form.setValue(`items.${index}.hsnCode`, v);
+                        }}
+                        value={form.watch(`items.${index}.hsnCode`)}
+                      >
+                        <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {HSN_RATES_BANA.map(h => (
+                            <SelectItem key={h.hsn} value={h.hsn}>{h.hsn} — {h.desc}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="grid gap-4 sm:grid-cols-4">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-semibold">Total Bags Ordered *</Label>
+                      <Input type="number" {...form.register(`items.${index}.totalBagsOrdered`, { valueAsNumber: true })} placeholder="e.g. 50" />
+                      {form.formState.errors.items?.[index]?.totalBagsOrdered && (
+                        <p className="text-[10px] text-destructive">{form.formState.errors.items[index]?.totalBagsOrdered?.message}</p>
+                      )}
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-semibold">Per Bag Weight (KG) *</Label>
+                      <Input type="number" step="0.01" {...form.register(`items.${index}.perBagWeightKg`, { valueAsNumber: true })} placeholder="e.g. 50" />
+                      {form.formState.errors.items?.[index]?.perBagWeightKg && (
+                        <p className="text-[10px] text-destructive">{form.formState.errors.items[index]?.perBagWeightKg?.message}</p>
+                      )}
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-semibold">Rate per KG (₹) *</Label>
+                      <Input type="number" step="0.01" {...form.register(`items.${index}.ratePerKg`, { valueAsNumber: true })} placeholder="e.g. 245.00" />
+                      {form.formState.errors.items?.[index]?.ratePerKg && (
+                        <p className="text-[10px] text-destructive">{form.formState.errors.items[index]?.ratePerKg?.message}</p>
+                      )}
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-semibold">Total Weight (Auto)</Label>
+                      <div className="h-9 px-3 flex items-center rounded-md border bg-muted/20 text-xs font-bold">
+                        {item.totalWeightKg > 0 ? `${item.totalWeightKg.toLocaleString()} KG` : "—"}
+                      </div>
+                    </div>
+                  </div>
+
+                  {item.grossAmount > 0 && (
+                    <div className="flex gap-4 justify-between border-t border-border/40 pt-2 text-[10px] text-muted-foreground font-medium">
+                      <span>Gross Amount: ₹{item.grossAmount.toLocaleString("en-IN", { maximumFractionDigits: 2 })}</span>
+                      <span className="font-bold text-foreground">Net Value: ₹{item.netPayable.toLocaleString("en-IN", { maximumFractionDigits: 2 })}</span>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+
+            {/* Auto-calculated Combined Summary */}
+            {totals.grossAmount > 0 && (
+              <div className="bg-muted/10 rounded-lg border border-border/20 p-4 space-y-2 mt-4">
+                <div className="flex items-center gap-1.5 mb-3">
+                  <Calculator className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Order Total Summary (Auto-Computed)</span>
+                </div>
                 <div className="grid grid-cols-2 gap-x-8 gap-y-1.5 text-xs">
-                  <div className="flex justify-between"><span className="text-muted-foreground">Gross Amount</span><span className="font-semibold">₹{grossAmount.toLocaleString("en-IN", { maximumFractionDigits: 2 })}</span></div>
-                  <div className="flex justify-between"><span className="text-muted-foreground">CGST</span><span className="font-semibold">₹{cgstAmount.toLocaleString("en-IN", { maximumFractionDigits: 2 })}</span></div>
-                  <div className="flex justify-between"><span className="text-muted-foreground">SGST</span><span className="font-semibold">₹{sgstAmount.toLocaleString("en-IN", { maximumFractionDigits: 2 })}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Combined Gross Amount</span><span className="font-semibold">₹{totals.grossAmount.toLocaleString("en-IN", { maximumFractionDigits: 2 })}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Total Bags / Weight</span><span className="font-semibold">{totals.totalBagsOrdered} Bags / {totals.totalWeightKg.toLocaleString()} KG</span></div>
                 </div>
                 <Separator className="my-2" />
-                <div className="flex justify-between font-bold text-sm"><span>Net Payable</span><span className="text-base">₹{netPayable.toLocaleString("en-IN", { maximumFractionDigits: 2 })}</span></div>
-                <p className="text-[10px] text-muted-foreground italic">{numberToWords(Math.round(netPayable))}</p>
+                <div className="flex justify-between text-sm font-bold text-foreground">
+                  <span>Grand Total Net Payable</span>
+                  <span className="text-base text-primary">₹{totals.netPayable.toLocaleString("en-IN", { maximumFractionDigits: 2 })}</span>
+                </div>
+                <p className="text-[10px] text-muted-foreground italic mt-1">{numberToWords(Math.round(totals.netPayable))}</p>
               </div>
             )}
           </CardContent>
         </Card>
 
-        <div className="flex justify-end gap-3 pb-6">
-          <Button type="button" variant="outline" onClick={() => router.back()} className="cursor-pointer">Cancel</Button>
-          <Button type="submit" disabled={mutation.isPending} className="min-w-[160px] cursor-pointer">{mutation.isPending ? "Creating..." : "Create Bana PO"}</Button>
+        {/* Form Submission */}
+        <div className="flex justify-end gap-3 pt-2">
+          <Button type="button" variant="outline" onClick={() => router.back()} className="h-9 cursor-pointer">Cancel</Button>
+          <Button type="submit" disabled={mutation.isPending} className="h-9 cursor-pointer">
+            {mutation.isPending ? "Creating PO..." : "Save Purchase Order"}
+          </Button>
         </div>
       </form>
     </PageContainer>

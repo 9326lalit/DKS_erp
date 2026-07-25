@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -35,10 +35,23 @@ type FormValues = z.infer<typeof schema>;
 export default function NewBanaPIPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
+
   const { data: grns = [] } = useQuery({ queryKey: ["bana-grns"], queryFn: () => banaApiService.getGRNs() });
+  const { data: pos = [] } = useQuery({ queryKey: ["bana-pos"], queryFn: () => banaApiService.getPOs() });
   const { data: existingPIs = [] } = useQuery({ queryKey: ["bana-pis"], queryFn: () => banaApiService.getPIs() });
+
+  const [selectedPOId, setSelectedPOId] = useState("");
+
   const linkedGRNIds = existingPIs.map(pi => pi.linkedGRNId);
   const availableGRNs = grns.filter(g => !linkedGRNIds.includes(g.id));
+
+  const availablePOs = pos.filter(po =>
+    availableGRNs.some(g => g.linkedPOId === po.id)
+  );
+
+  const filteredGRNs = selectedPOId
+    ? availableGRNs.filter(g => g.linkedPOId === selectedPOId)
+    : availableGRNs;
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -48,12 +61,36 @@ export default function NewBanaPIPage() {
   const selectedGRNId = form.watch("linkedGRNId");
   const selectedGRN = grns.find(g => g.id === selectedGRNId);
 
-  React.useEffect(() => {
+  useEffect(() => {
+    if (selectedGRN) {
+      setSelectedPOId(selectedGRN.linkedPOId);
+    }
+  }, [selectedGRN]);
+
+  useEffect(() => {
+    if (selectedPOId) {
+      const match = availableGRNs.filter(g => g.linkedPOId === selectedPOId);
+      if (match.length > 0) {
+        if (!match.some(m => m.id === form.getValues("linkedGRNId"))) {
+          form.setValue("linkedGRNId", match[0].id);
+        }
+      } else {
+        form.setValue("linkedGRNId", "");
+      }
+    }
+  }, [selectedPOId]);
+
+  useEffect(() => {
     if (selectedGRN) {
       form.setValue("totalWeightKg", selectedGRN.totalWeightReceived);
       form.setValue("itemDescription", `Bana (Weft Yarn) — ${selectedGRN.totalWeightReceived} KG (${selectedGRN.bagsReceivedThisGRN} Bags)`);
+      
+      const po = pos.find(p => p.id === selectedGRN.linkedPOId);
+      if (po) {
+        form.setValue("ratePerKg", po.ratePerKg);
+      }
     }
-  }, [selectedGRNId]);
+  }, [selectedGRNId, pos, selectedGRN, form]);
 
   const wt = form.watch("totalWeightKg") || 0;
   const rate = form.watch("ratePerKg") || 0;
@@ -106,20 +143,52 @@ export default function NewBanaPIPage() {
         <Card className="border-border/40 shadow-sm">
           <CardHeader className="pb-4 bg-muted/5 border-b border-border/10"><CardTitle className="text-sm font-bold">Invoice Header</CardTitle></CardHeader>
           <CardContent className="pt-5 space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-4 sm:grid-cols-3">
               <div className="space-y-1.5"><Label className="text-xs font-semibold">PI Date *</Label><Input type="date" {...form.register("piDate")} /></div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold">Select Purchase Order (PO)</Label>
+                <Select onValueChange={(v) => setSelectedPOId(v)} value={selectedPOId}>
+                  <SelectTrigger className="h-9"><SelectValue placeholder="Select PO" /></SelectTrigger>
+                  <SelectContent>
+                    {availablePOs.length === 0 && <SelectItem value="none" disabled>No POs with pending GRNs</SelectItem>}
+                    {availablePOs.map(po => (
+                      <SelectItem key={po.id} value={po.id}>{po.poNumber} — {po.purchaseFromName}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               <div className="space-y-1.5">
                 <Label className="text-xs font-semibold">Linked Bana GRN *</Label>
                 <Select onValueChange={(v) => form.setValue("linkedGRNId", v)} value={form.watch("linkedGRNId")}>
-                  <SelectTrigger><SelectValue placeholder="Select GRN (without PI)" /></SelectTrigger>
+                  <SelectTrigger className="h-9"><SelectValue placeholder="Select GRN" /></SelectTrigger>
                   <SelectContent>
-                    {availableGRNs.length === 0 && <SelectItem value="" disabled>All GRNs already invoiced</SelectItem>}
-                    {availableGRNs.map(g => <SelectItem key={g.id} value={g.id}>{g.grnNumber} — {g.supplierName} ({g.totalWeightReceived} KG)</SelectItem>)}
+                    {filteredGRNs.length === 0 && <SelectItem value="none" disabled>Select PO first or no pending GRNs</SelectItem>}
+                    {filteredGRNs.map(g => (
+                      <SelectItem key={g.id} value={g.id}>{g.grnNumber} ({g.bagsReceivedThisGRN} bags, {g.totalWeightReceived} KG)</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
                 {form.formState.errors.linkedGRNId && <p className="text-[10px] text-destructive">{form.formState.errors.linkedGRNId.message}</p>}
               </div>
             </div>
+
+            {selectedGRN && (
+              <div className="grid grid-cols-3 gap-4 bg-muted/10 p-3 rounded-lg border border-border/10 text-xs">
+                <div>
+                  <span className="text-muted-foreground block mb-0.5">Linked PO Number</span>
+                  <span className="font-bold text-foreground">{selectedGRN.linkedPONumber}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground block mb-0.5">Supplier</span>
+                  <span className="font-semibold text-foreground">{selectedGRN.supplierName}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground block mb-0.5">Received Status</span>
+                  <span className="font-semibold text-foreground">{selectedGRN.bagsReceivedThisGRN} Bags ({selectedGRN.totalWeightReceived} KG)</span>
+                </div>
+              </div>
+            )}
+
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5"><Label className="text-xs font-semibold">Supplier Invoice No. *</Label><Input {...form.register("supplierInvoiceNo")} placeholder="e.g. SGY/2026/0018" />{form.formState.errors.supplierInvoiceNo && <p className="text-[10px] text-destructive">{form.formState.errors.supplierInvoiceNo.message}</p>}</div>
               <div className="space-y-1.5"><Label className="text-xs font-semibold">Supplier Invoice Date *</Label><Input type="date" {...form.register("supplierInvoiceDate")} /></div>
@@ -147,23 +216,24 @@ export default function NewBanaPIPage() {
                   <div className="flex justify-between"><span className="text-muted-foreground">Taxable Amount</span><span className="font-semibold">₹{taxableAmount.toLocaleString("en-IN", { maximumFractionDigits: 2 })}</span></div>
                   <div className="flex justify-between"><span className="text-muted-foreground">CGST @ {cgst}%</span><span className="font-semibold">₹{cgstAmount.toLocaleString("en-IN", { maximumFractionDigits: 2 })}</span></div>
                   <div className="flex justify-between"><span className="text-muted-foreground">SGST @ {sgst}%</span><span className="font-semibold">₹{sgstAmount.toLocaleString("en-IN", { maximumFractionDigits: 2 })}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Round Off</span><span className="font-semibold">₹{roundOff.toFixed(2)}</span></div>
                 </div>
                 <Separator className="my-2" />
-                <div className="flex justify-between font-bold text-sm"><span>Net Payable</span><span className="text-base">₹{netPayable.toLocaleString("en-IN", { maximumFractionDigits: 2 })}</span></div>
+                <div className="flex justify-between font-bold text-sm">
+                  <span>Grand Total Net Payable</span><span className="text-base text-primary">₹{netPayable.toLocaleString("en-IN", { maximumFractionDigits: 2 })}</span>
+                </div>
                 <p className="text-[10px] text-muted-foreground italic">{numberToWords(Math.round(netPayable))}</p>
               </div>
             )}
             <div className="grid gap-4 sm:grid-cols-3">
-              <div className="space-y-1.5"><Label className="text-xs font-semibold">Payment Terms (Days)</Label><Input type="number" {...form.register("paymentTermsDays", { valueAsNumber: true })} /></div>
+              <div className="space-y-1.5"><Label className="text-xs font-semibold">Payment Terms (Days)</Label><Input type="number" {...form.register("paymentTermsDays", { valueAsNumber: true })} placeholder="30" /></div>
               <div className="space-y-1.5"><Label className="text-xs font-semibold">Due Date (Auto)</Label><div className="h-10 px-3 flex items-center rounded-md border bg-muted/30 text-sm font-bold">{dueDate || "—"}</div></div>
-              <div className="space-y-1.5"><Label className="text-xs font-semibold">Payment Status</Label><Select onValueChange={(v) => form.setValue("paymentStatus", v as any)} value={form.watch("paymentStatus")}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Pending">Pending</SelectItem><SelectItem value="Partially Paid">Partially Paid</SelectItem><SelectItem value="Paid">Paid</SelectItem></SelectContent></Select></div>
             </div>
           </CardContent>
         </Card>
-
-        <div className="flex justify-end gap-3 pb-6">
-          <Button type="button" variant="outline" onClick={() => router.back()} className="cursor-pointer">Cancel</Button>
-          <Button type="submit" disabled={mutation.isPending || !selectedGRN} className="min-w-[160px] cursor-pointer">{mutation.isPending ? "Creating..." : "Create Bana Invoice"}</Button>
+        <div className="flex justify-end gap-3 pt-2">
+          <Button type="button" variant="outline" onClick={() => router.back()} className="h-9 cursor-pointer">Cancel</Button>
+          <Button type="submit" disabled={mutation.isPending} className="h-9 cursor-pointer">{mutation.isPending ? "Creating Invoice..." : "Save Invoice"}</Button>
         </div>
       </form>
     </PageContainer>

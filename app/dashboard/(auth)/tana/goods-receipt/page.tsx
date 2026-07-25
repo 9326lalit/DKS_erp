@@ -1,10 +1,13 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
 import { toast } from "sonner";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, ArrowLeft } from "lucide-react";
 
 import { tanaApiService } from "@/lib/services/tana-api";
 import { TanaGRN } from "@/lib/store/use-tana-store";
@@ -13,8 +16,13 @@ import { PageHeader } from "@/components/textile-erp/page-header";
 import { MasterToolbar } from "@/components/textile-erp/master-toolbar";
 import { MasterTable, TableColumn } from "@/components/textile-erp/master-table";
 import { MasterDialog } from "@/components/textile-erp/master-dialog";
+import { DetailViewCard } from "@/components/textile-erp/detail-view-card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle
@@ -32,13 +40,107 @@ const conditionColors: Record<string, string> = {
   "Rejected": "bg-red-700/10 text-red-700 border-red-700/20"
 };
 
+const schema = z.object({
+  grnDate: z.string().min(1, "GRN Date is required"),
+  vehicleNo: z.string().optional(),
+  lrNo: z.string().optional(),
+  bagsReceivedThisGRN: z.number().min(1, "Bags received must be at least 1"),
+  conditionCheck: z.enum(["Good", "Damaged", "Rejected"]),
+  receivedBy: z.string().min(2, "Received By is required"),
+  remarks: z.string().optional()
+});
+
+type FormValues = z.infer<typeof schema>;
+
 export default function TanaGRNListPage() {
   const queryClient = useQueryClient();
   const [searchValue, setSearchValue] = useState("");
   const [selectedFilters, setSelectedFilters] = useState<Record<string, string>>({ status: "all", conditionCheck: "all" });
   const [viewGRN, setViewGRN] = useState<TanaGRN | null>(null);
+  const [editGRN, setEditGRN] = useState<TanaGRN | null>(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<TanaGRN | null>(null);
 
   const { data: grns = [], isLoading } = useQuery({ queryKey: ["tana-grns"], queryFn: () => tanaApiService.getGRNs() });
+
+  const form = useForm<FormValues>({
+    resolver: zodResolver(schema),
+    defaultValues: {
+      grnDate: "",
+      vehicleNo: "",
+      lrNo: "",
+      bagsReceivedThisGRN: 0,
+      conditionCheck: "Good",
+      receivedBy: "",
+      remarks: ""
+    }
+  });
+
+  useEffect(() => {
+    if (editGRN) {
+      form.reset({
+        grnDate: editGRN.grnDate,
+        vehicleNo: editGRN.vehicleNo || "",
+        lrNo: editGRN.lrNo || "",
+        bagsReceivedThisGRN: editGRN.bagsReceivedThisGRN,
+        conditionCheck: editGRN.conditionCheck,
+        receivedBy: editGRN.receivedBy,
+        remarks: editGRN.remarks || ""
+      });
+    }
+  }, [editGRN, form]);
+
+  const updateMutation = useMutation({
+    mutationFn: (data: TanaGRN) => tanaApiService.updateGRN(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tana-grns"] });
+      queryClient.invalidateQueries({ queryKey: ["tana-pos"] });
+      toast.success("Tana GRN updated successfully.");
+      setEditGRN(null);
+    },
+    onError: () => toast.error("Failed to update GRN.")
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => tanaApiService.deleteGRN(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tana-grns"] });
+      queryClient.invalidateQueries({ queryKey: ["tana-pos"] });
+      toast.success("Tana GRN deleted.");
+      setDeleteConfirmOpen(false);
+      setDeleteTarget(null);
+    },
+    onError: () => toast.error("Failed to delete GRN.")
+  });
+
+  const handleEditClick = (grn: TanaGRN) => {
+    setEditGRN(grn);
+    setViewGRN(null);
+  };
+
+  const handleDeleteClick = (grn: TanaGRN) => {
+    setDeleteTarget(grn);
+    setDeleteConfirmOpen(true);
+  };
+
+  const handleFormSubmit = (values: FormValues) => {
+    if (!editGRN) return;
+    const maxBags = editGRN.bagsPending;
+    if (values.bagsReceivedThisGRN > maxBags) {
+      toast.error(`Cannot receive ${values.bagsReceivedThisGRN} bags. Only ${maxBags} bags pending.`);
+      return;
+    }
+
+    const totalWeight = values.bagsReceivedThisGRN * editGRN.perBagWeightKg;
+    const isComplete = (editGRN.bagsPreviouslyReceived + values.bagsReceivedThisGRN) >= editGRN.bagsOrdered;
+
+    updateMutation.mutate({
+      ...editGRN,
+      ...values,
+      totalWeightReceived: parseFloat(totalWeight.toFixed(2)),
+      status: isComplete ? "Completed" : values.bagsReceivedThisGRN > 0 ? "Partial" : "Pending"
+    });
+  };
 
   const filtered = grns.filter(g => {
     const ms = g.grnNumber.toLowerCase().includes(searchValue.toLowerCase()) || g.linkedPONumber.toLowerCase().includes(searchValue.toLowerCase()) || g.supplierName.toLowerCase().includes(searchValue.toLowerCase());
@@ -64,13 +166,6 @@ export default function TanaGRNListPage() {
         title="Tana Goods Receipt Notes (GRN)"
         description="Record receipt of Tana (Warp Yarn) bags against open Purchase Orders. Supports partial deliveries. Series: TANA-GRN-YYYY-NNNN."
         breadcrumbs={[{ title: "Dashboard", href: "/dashboard/default" }, { title: "Tana (Warp)" }, { title: "GRN" }]}
-        actions={
-          <Link href="/dashboard/tana/goods-receipt/new">
-            <Button size="sm" className="h-9 gap-1.5 cursor-pointer">
-              <Plus className="h-4 w-4" /> Create Tana GRN
-            </Button>
-          </Link>
-        }
       />
 
       <MasterToolbar
@@ -93,51 +188,161 @@ export default function TanaGRNListPage() {
         columns={columns}
         isLoading={isLoading}
         onView={(item) => setViewGRN(item)}
-        onBulkDelete={() => {}}
+        onEdit={handleEditClick}
+        onDelete={handleDeleteClick}
+        onBulkDelete={(items) => items.forEach(i => deleteMutation.mutate(i.id))}
       />
 
       {/* View GRN Dialog */}
       <MasterDialog
         isOpen={!!viewGRN}
         onClose={() => setViewGRN(null)}
-        title={`GRN: ${viewGRN?.grnNumber}`}
-        description={`Linked PO: ${viewGRN?.linkedPONumber} | Supplier: ${viewGRN?.supplierName}`}
+        title="Goods Receipt Note Details (Tana)"
+        description={`GRN #: ${viewGRN?.grnNumber} | Date: ${viewGRN?.grnDate}`}
       >
         {viewGRN && (
-          <div className="space-y-4 text-xs">
-            <div className="grid grid-cols-3 gap-3 bg-muted/20 rounded-lg p-3 border border-border/10">
-              <div><span className="text-muted-foreground block">GRN Number</span><span className="font-bold text-primary">{viewGRN.grnNumber}</span></div>
-              <div><span className="text-muted-foreground block">GRN Date</span><span className="font-semibold">{viewGRN.grnDate}</span></div>
-              <div><span className="text-muted-foreground block">Status</span><Badge variant="outline" className={`text-[10px] font-bold ${grnStatusColors[viewGRN.status] || ""}`}>{viewGRN.status}</Badge></div>
-            </div>
-            <div className="grid grid-cols-2 gap-3 border-b pb-3 border-border/10">
-              <div><span className="text-muted-foreground block">Linked PO</span><span className="font-bold">{viewGRN.linkedPONumber}</span></div>
-              <div><span className="text-muted-foreground block">Supplier</span><span className="font-semibold">{viewGRN.supplierName}</span></div>
-            </div>
-            <div className="grid grid-cols-2 gap-3 border-b pb-3 border-border/10">
-              <div><span className="text-muted-foreground block">Vehicle No.</span><span className="font-semibold">{viewGRN.vehicleNo || "—"}</span></div>
-              <div><span className="text-muted-foreground block">LR No.</span><span className="font-semibold">{viewGRN.lrNo || "—"}</span></div>
-            </div>
-            <div className="bg-muted/10 rounded-lg border border-border/10 p-3">
-              <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-2">Delivery Tracking</h4>
-              <div className="grid grid-cols-2 gap-2">
-                <div className="flex justify-between"><span className="text-muted-foreground">Bags Ordered (PO)</span><span className="font-semibold">{viewGRN.bagsOrdered}</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Previously Received</span><span className="font-semibold">{viewGRN.bagsPreviouslyReceived}</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Bags Pending (before)</span><span className="font-semibold text-amber-600">{viewGRN.bagsPending}</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Bags This GRN</span><span className="font-bold text-emerald-600">{viewGRN.bagsReceivedThisGRN}</span></div>
+          <DetailViewCard
+            title={viewGRN.grnNumber}
+            subtitle={`Linked PO: ${viewGRN.linkedPONumber} • Supplier: ${viewGRN.supplierName}`}
+            statusBadge={
+              <Badge variant="outline" className={`text-[10px] font-bold ${grnStatusColors[viewGRN.status] || ""}`}>
+                {viewGRN.status}
+              </Badge>
+            }
+            sections={[
+              {
+                title: "Receipt & Transport Details",
+                fields: [
+                  { label: "Linked PO Number", value: viewGRN.linkedPONumber, highlight: true },
+                  { label: "Supplier Name", value: viewGRN.supplierName },
+                  { label: "GRN Date", value: viewGRN.grnDate, mono: true },
+                  { label: "Vehicle Number", value: viewGRN.vehicleNo || "—", mono: true },
+                  { label: "LR / Transport No.", value: viewGRN.lrNo || "—", mono: true },
+                  { label: "Received By", value: viewGRN.receivedBy }
+                ]
+              },
+              {
+                title: "Bags & Weight Breakdown",
+                fields: [
+                  { label: "Bags Ordered", value: viewGRN.bagsOrdered },
+                  { label: "Prev. Received", value: viewGRN.bagsPreviouslyReceived },
+                  { label: "Bags This GRN", value: viewGRN.bagsReceivedThisGRN, highlight: true },
+                  { label: "Per Bag Weight", value: `${viewGRN.perBagWeightKg} KG` },
+                  { label: "Total Weight Received", value: `${viewGRN.totalWeightReceived.toLocaleString()} KG`, highlight: true },
+                  { label: "Condition Check", value: viewGRN.conditionCheck, badge: true, badgeClass: conditionColors[viewGRN.conditionCheck] }
+                ]
+              }
+            ]}
+          >
+            {viewGRN.remarks && (
+              <div className="p-3 bg-card border border-border/30 rounded-lg">
+                <span className="text-[10px] font-bold text-muted-foreground uppercase block">Remarks</span>
+                <p className="text-xs mt-1 text-foreground">{viewGRN.remarks}</p>
               </div>
+            )}
+
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" size="sm" onClick={() => setViewGRN(null)} className="h-8 px-6 cursor-pointer">
+                Close Details
+              </Button>
             </div>
-            <div className="grid grid-cols-3 gap-3 border-b pb-3 border-border/10">
-              <div><span className="text-muted-foreground block">Per Bag Wt.</span><span className="font-semibold">{viewGRN.perBagWeightKg} KG</span></div>
-              <div><span className="text-muted-foreground block">Total Weight</span><span className="font-bold">{viewGRN.totalWeightReceived.toLocaleString()} KG</span></div>
-              <div><span className="text-muted-foreground block">Condition</span><Badge variant="outline" className={`text-[10px] font-bold ${conditionColors[viewGRN.conditionCheck] || ""}`}>{viewGRN.conditionCheck}</Badge></div>
-            </div>
-            <div><span className="text-muted-foreground block">Received By</span><span className="font-semibold">{viewGRN.receivedBy}</span></div>
-            {viewGRN.remarks && <div><span className="text-muted-foreground block">Remarks</span><p className="bg-muted/20 p-2 rounded border border-border/10 mt-0.5">{viewGRN.remarks}</p></div>}
-            <div className="flex justify-end pt-2"><Button variant="outline" onClick={() => setViewGRN(null)}>Close</Button></div>
-          </div>
+          </DetailViewCard>
         )}
       </MasterDialog>
+
+      {/* Edit GRN Dialog */}
+      <MasterDialog
+        isOpen={!!editGRN}
+        onClose={() => setEditGRN(null)}
+        title={`Edit GRN: ${editGRN?.grnNumber}`}
+        description={`Linked PO: ${editGRN?.linkedPONumber} | Supplier: ${editGRN?.supplierName}`}
+      >
+        {editGRN && (
+          <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4 text-xs">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold">GRN Date *</Label>
+                <Input type="date" {...form.register("grnDate")} />
+                {form.formState.errors.grnDate && <p className="text-[10px] text-destructive">{form.formState.errors.grnDate.message}</p>}
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold">Condition Check *</Label>
+                <Select onValueChange={(v) => form.setValue("conditionCheck", v as any)} value={form.watch("conditionCheck")}>
+                  <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Good">Good</SelectItem>
+                    <SelectItem value="Damaged">Damaged</SelectItem>
+                    <SelectItem value="Rejected">Rejected</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold">Vehicle Number</Label>
+                <Input {...form.register("vehicleNo")} placeholder="e.g. MH-09-CD-1234" />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold">LR Number</Label>
+                <Input {...form.register("lrNo")} placeholder="e.g. LR-987654" />
+              </div>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold">Bags Received *</Label>
+                <Input type="number" {...form.register("bagsReceivedThisGRN", { valueAsNumber: true })} />
+                <p className="text-[10px] text-muted-foreground">Max allowed: {editGRN.bagsPending} bags</p>
+                {form.formState.errors.bagsReceivedThisGRN && <p className="text-[10px] text-destructive">{form.formState.errors.bagsReceivedThisGRN.message}</p>}
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold">Received By *</Label>
+                <Input {...form.register("receivedBy")} placeholder="Enter name" />
+                {form.formState.errors.receivedBy && <p className="text-[10px] text-destructive">{form.formState.errors.receivedBy.message}</p>}
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold">Total Weight (Auto)</Label>
+                <div className="h-9 px-3 flex items-center rounded-md border bg-muted/20 text-xs font-bold">
+                  {((form.watch("bagsReceivedThisGRN") || 0) * editGRN.perBagWeightKg).toLocaleString()} KG
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold">Remarks</Label>
+              <Textarea rows={2} {...form.register("remarks")} placeholder="Notes or instructions..." />
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <Button type="button" variant="outline" onClick={() => setEditGRN(null)}>Cancel</Button>
+              <Button type="submit" disabled={updateMutation.isPending}>
+                {updateMutation.isPending ? "Saving..." : "Save Changes"}
+              </Button>
+            </div>
+          </form>
+        )}
+      </MasterDialog>
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-sm font-bold flex items-center gap-2 text-destructive">
+              <Trash2 className="h-4 w-4" />Delete Tana Goods Receipt Note?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-xs">
+              Delete GRN <strong>{deleteTarget?.grnNumber}</strong>? This action will restore <strong>{deleteTarget?.bagsReceivedThisGRN}</strong> bags to the pending list of Purchase Order <strong>{deleteTarget?.linkedPONumber}</strong> and deduct the stock.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction className="bg-destructive text-white hover:bg-destructive/90 text-xs cursor-pointer" onClick={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)}>
+              Delete GRN
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </PageContainer>
   );
 }

@@ -9,12 +9,13 @@ import { toast } from "sonner";
 import { Trash2 } from "lucide-react";
 
 import { mastersApiService } from "@/lib/services/masters-api";
-import { Loom } from "@/lib/store/use-masters-store";
+import { Loom, useMastersStore } from "@/lib/store/use-masters-store";
 import { PageContainer } from "@/components/textile-erp/page-container";
 import { PageHeader } from "@/components/textile-erp/page-header";
 import { MasterToolbar } from "@/components/textile-erp/master-toolbar";
 import { MasterTable, TableColumn } from "@/components/textile-erp/master-table";
 import { MasterDialog } from "@/components/textile-erp/master-dialog";
+import { DetailViewCard } from "@/components/textile-erp/detail-view-card";
 import { StatusBadge } from "@/components/textile-erp/status-badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -55,6 +56,150 @@ export default function LoomsPage() {
   const [viewLoom, setViewLoom] = useState<Loom | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Loom | null>(null);
+
+  const fileInputRef = React.useRef<HTMLInputElement | null>(null);
+
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const text = event.target?.result as string;
+        if (text) {
+          processCSV(text);
+        }
+      };
+      reader.readAsText(file);
+      e.target.value = "";
+    }
+  };
+
+  const processCSV = (text: string) => {
+    const lines = text.split(/\r?\n/);
+    if (lines.length < 2) {
+      toast.error("CSV file is empty or missing headers.");
+      return;
+    }
+    const headers = lines[0].split(",").map(h => h.trim().replace(/^["']|["']$/g, "").toLowerCase());
+    
+    const getIndex = (aliases: string[]) => {
+      return headers.findIndex(h => aliases.includes(h));
+    };
+
+    const factoryIdx = getIndex(["factory", "factoryname", "factory id", "factory_name", "factory_id"]);
+    const loomNumIdx = getIndex(["loom number", "loom_number", "loom no", "loom_no", "loomnumber", "loomno"]);
+    const loomTypeIdx = getIndex(["loom type", "loom_type", "type", "loomtype"]);
+    const reedCountIdx = getIndex(["reed count", "reed_count", "reed", "reedcount"]);
+    const widthIdx = getIndex(["width", "width inches", "width_inches", "widthinches", "loom width", "loom_width"]);
+    const speedIdx = getIndex(["speed", "rpm", "rpm speed", "rpm_speed", "rpmspeed"]);
+    const makeIdx = getIndex(["make", "brand", "make/brand", "make_brand", "manufacturer"]);
+    const yearIdx = getIndex(["year", "purchase year", "year of purchase", "year_of_purchase", "purchase_year"]);
+    const statusIdx = getIndex(["status", "active status", "active_status"]);
+    const remarksIdx = getIndex(["remarks", "remark", "notes", "note"]);
+
+    if (loomNumIdx === -1) {
+      toast.error("CSV must contain a 'Loom Number' column.");
+      return;
+    }
+
+    const newLooms: Loom[] = [];
+    const skippedRows: string[] = [];
+
+    for (let i = 1; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (!line) continue;
+
+      const matches = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || line.split(",");
+      const values = matches.map(v => v.trim().replace(/^["']|["']$/g, ""));
+      
+      const getValue = (idx: number) => {
+        return idx !== -1 && idx < values.length ? values[idx] : "";
+      };
+
+      const rawLoomNum = getValue(loomNumIdx);
+      if (!rawLoomNum) {
+        skippedRows.push(`Row ${i + 1}: Missing Loom Number`);
+        continue;
+      }
+
+      const rawFactory = getValue(factoryIdx);
+      let matchedFactory = factories[0];
+      if (rawFactory) {
+        const found = factories.find(f => 
+          f.factoryName.toLowerCase().includes(rawFactory.toLowerCase()) || 
+          f.id.toLowerCase() === rawFactory.toLowerCase()
+        );
+        if (found) {
+          matchedFactory = found;
+        }
+      }
+
+      if (!matchedFactory) {
+        skippedRows.push(`Row ${i + 1}: No factory matched`);
+        continue;
+      }
+
+      const rawType = getValue(loomTypeIdx).toLowerCase();
+      let loomType: "Power Loom" | "Handloom" | "Rapier" | "Shuttle" = "Power Loom";
+      if (rawType.includes("hand")) loomType = "Handloom";
+      else if (rawType.includes("rapier")) loomType = "Rapier";
+      else if (rawType.includes("shuttle")) loomType = "Shuttle";
+
+      const rawStatus = getValue(statusIdx).toLowerCase();
+      let status: "Active" | "Idle" | "Under Repair" = "Active";
+      if (rawStatus.includes("idle")) status = "Idle";
+      else if (rawStatus.includes("repair") || rawStatus.includes("under")) status = "Under Repair";
+
+      const parseNum = (val: string) => {
+        const n = parseFloat(val);
+        return isNaN(n) ? undefined : n;
+      };
+
+      const reedCount = parseNum(getValue(reedCountIdx));
+      const widthInches = parseNum(getValue(widthIdx));
+      const rpmSpeed = parseNum(getValue(speedIdx));
+      const yearOfPurchase = parseNum(getValue(yearIdx));
+
+      const seq = looms.length + newLooms.length + 1;
+
+      const loomItem: Loom = {
+        id: `LOM-ID-${String(seq).padStart(3, "0")}-${Date.now()}-${i}`,
+        loomId: `LOM-${String(seq).padStart(3, "0")}`,
+        factoryId: matchedFactory.id,
+        factoryName: matchedFactory.factoryName,
+        loomNumber: rawLoomNum,
+        loomType,
+        reedCount,
+        widthInches,
+        rpmSpeed,
+        makeBrand: getValue(makeIdx) || undefined,
+        yearOfPurchase,
+        status,
+        remarks: getValue(remarksIdx) || undefined
+      };
+
+      newLooms.push(loomItem);
+    }
+
+    if (newLooms.length === 0) {
+      toast.error("No valid loom records found in CSV.");
+      return;
+    }
+
+    useMastersStore.setState((state) => ({
+      looms: [...newLooms, ...state.looms]
+    }));
+
+    queryClient.invalidateQueries({ queryKey: ["looms"] });
+    toast.success(`Successfully imported ${newLooms.length} looms.`);
+    if (skippedRows.length > 0) {
+      toast.warning(`Skipped ${skippedRows.length} rows:\n${skippedRows.slice(0, 3).join("\n")}${skippedRows.length > 3 ? "\n..." : ""}`);
+    }
+  };
 
   const { data: looms = [], isLoading } = useQuery({ queryKey: ["looms"], queryFn: () => mastersApiService.getLooms() });
   const { data: factories = [] } = useQuery({ queryKey: ["factories"], queryFn: () => mastersApiService.getFactories() });
@@ -114,6 +259,7 @@ export default function LoomsPage() {
   const statusColors: Record<string, string> = { "Active": "bg-emerald-500/10 text-emerald-600 border-emerald-500/20", "Idle": "bg-amber-500/10 text-amber-600 border-amber-500/20", "Under Repair": "bg-red-500/10 text-red-600 border-red-500/20" };
 
   const columns: TableColumn<Loom>[] = [
+    { key: "createdDate", header: "Created Date", render: (item) => <span className="font-mono text-xs text-muted-foreground">{item.createdDate || "25 Jul 2026"}</span>, sortable: true },
     { key: "loomId", header: "Loom ID", sortable: true },
     { key: "factoryName", header: "Factory", sortable: true },
     { key: "loomNumber", header: "Loom No.", sortable: true },
@@ -151,12 +297,21 @@ export default function LoomsPage() {
         </div>
       )}
 
+      <input 
+        type="file" 
+        accept=".csv" 
+        ref={fileInputRef} 
+        onChange={handleFileChange} 
+        className="hidden" 
+      />
+
       <MasterToolbar
         searchValue={searchValue}
         onSearchChange={setSearchValue}
         createLabel="Register New Loom"
         onCreateClick={() => { setEditLoom(null); setViewLoom(null); form.reset(defaultValues); setDialogOpen(true); }}
         exportTitle="Looms"
+        onImportClick={handleImportClick}
         selectedFilters={selectedFilters}
         onFilterChange={(key, val) => setSelectedFilters(p => ({ ...p, [key]: val }))}
         onClearFilters={() => { setSearchValue(""); setSelectedFilters({ factoryId: "all", status: "all", loomType: "all" }); }}
@@ -185,31 +340,49 @@ export default function LoomsPage() {
         description={viewLoom ? `Factory: ${viewLoom.factoryName} | Type: ${viewLoom.loomType}` : "Register a loom and link it to a factory. All fields marked * are required."}
       >
         {viewLoom ? (
-          <div className="space-y-4 text-xs">
-            <div className="grid grid-cols-2 gap-4 border-b pb-4 border-border/10">
-              <div><span className="text-muted-foreground block font-medium">Loom ID</span><span className="font-bold">{viewLoom.loomId}</span></div>
-              <div><span className="text-muted-foreground block font-medium">Loom Number</span><span className="font-bold">{viewLoom.loomNumber}</span></div>
+          <DetailViewCard
+            title={`Loom #${viewLoom.loomNumber}`}
+            subtitle={`Loom ID: ${viewLoom.loomId} • Factory: ${viewLoom.factoryName}`}
+            statusBadge={
+              <Badge variant="outline" className={`text-[10px] font-bold ${statusColors[viewLoom.status] || ""}`}>
+                {viewLoom.status}
+              </Badge>
+            }
+            sections={[
+              {
+                title: "Loom Identity & Location",
+                fields: [
+                  { label: "Loom Number", value: viewLoom.loomNumber, highlight: true },
+                  { label: "Loom Type", value: viewLoom.loomType, badge: true },
+                  { label: "Factory Unit", value: viewLoom.factoryName, highlight: true },
+                  { label: "Loom ID", value: viewLoom.loomId, mono: true },
+                  { label: "Make / Brand", value: viewLoom.makeBrand || "N/A" },
+                  { label: "Year of Purchase", value: viewLoom.yearOfPurchase || "N/A", mono: true }
+                ]
+              },
+              {
+                title: "Technical Specifications & Labour",
+                fields: [
+                  { label: "Reed Count", value: viewLoom.reedCount ?? "N/A", mono: true },
+                  { label: "Loom Width", value: viewLoom.widthInches ? `${viewLoom.widthInches} Inches` : "N/A", mono: true },
+                  { label: "RPM / Speed", value: viewLoom.rpmSpeed ? `${viewLoom.rpmSpeed} RPM` : "N/A", highlight: true, mono: true },
+                  { label: "Assigned Weaver / Labour", value: viewLoom.assignedLabourName || "Unassigned (Shared Worker Pool)", colSpan: 3 }
+                ]
+              }
+            ]}
+          >
+            {viewLoom.remarks && (
+              <div className="p-3 bg-card border border-border/30 rounded-lg">
+                <span className="text-[10px] font-bold text-muted-foreground uppercase block">Remarks</span>
+                <p className="text-xs mt-1 text-foreground">{viewLoom.remarks}</p>
+              </div>
+            )}
+            <div className="flex justify-end pt-2">
+              <Button variant="outline" size="sm" onClick={() => setDialogOpen(false)} className="h-8 px-6 cursor-pointer">
+                Close Details
+              </Button>
             </div>
-            <div className="grid grid-cols-2 gap-4 border-b pb-4 border-border/10">
-              <div><span className="text-muted-foreground block font-medium">Factory</span><span className="font-semibold">{viewLoom.factoryName}</span></div>
-              <div><span className="text-muted-foreground block font-medium">Loom Type</span><Badge variant="outline" className="font-semibold">{viewLoom.loomType}</Badge></div>
-            </div>
-            <div className="grid grid-cols-3 gap-4 border-b pb-4 border-border/10">
-              <div><span className="text-muted-foreground block font-medium">Reed Count</span><span className="font-semibold">{viewLoom.reedCount ?? "N/A"}</span></div>
-              <div><span className="text-muted-foreground block font-medium">Width</span><span className="font-semibold">{viewLoom.widthInches ? `${viewLoom.widthInches}"` : "N/A"}</span></div>
-              <div><span className="text-muted-foreground block font-medium">RPM / Speed</span><span className="font-semibold">{viewLoom.rpmSpeed ?? "N/A"}</span></div>
-            </div>
-            <div className="grid grid-cols-2 gap-4 border-b pb-4 border-border/10">
-              <div><span className="text-muted-foreground block font-medium">Make / Brand</span><span className="font-semibold">{viewLoom.makeBrand || "N/A"}</span></div>
-              <div><span className="text-muted-foreground block font-medium">Year of Purchase</span><span className="font-semibold">{viewLoom.yearOfPurchase ?? "N/A"}</span></div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div><span className="text-muted-foreground block font-medium">Status</span><Badge variant="outline" className={`font-bold ${statusColors[viewLoom.status] || ""}`}>{viewLoom.status}</Badge></div>
-              <div><span className="text-muted-foreground block font-medium">Assigned Labour</span><span className="font-semibold">{viewLoom.assignedLabourName || "Unassigned"}</span></div>
-            </div>
-            {viewLoom.remarks && <div><span className="text-muted-foreground block font-medium">Remarks</span><p className="bg-muted/20 p-3 rounded-lg border border-border/10 font-medium mt-1">{viewLoom.remarks}</p></div>}
-            <div className="flex justify-end pt-2"><Button variant="outline" onClick={() => setDialogOpen(false)}>Close</Button></div>
-          </div>
+          </DetailViewCard>
         ) : (
           <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
@@ -217,7 +390,7 @@ export default function LoomsPage() {
                 <Label className="text-xs font-semibold">Factory *</Label>
                 <Select onValueChange={(v) => { form.setValue("factoryId", v); form.setValue("factoryName", factories.find(f => f.id === v)?.factoryName || ""); }} value={form.watch("factoryId")}>
                   <SelectTrigger><SelectValue placeholder="Select factory" /></SelectTrigger>
-                  <SelectContent>{factories.map(f => <SelectItem key={f.id} value={f.id}>{f.factoryName}</SelectItem>)}</SelectContent>
+                  <SelectContent>{[...factories].sort((a, b) => a.factoryName.localeCompare(b.factoryName)).map(f => <SelectItem key={f.id} value={f.id}>{f.factoryName}</SelectItem>)}</SelectContent>
                 </Select>
                 {form.formState.errors.factoryId && <p className="text-[10px] text-destructive">{form.formState.errors.factoryId.message}</p>}
               </div>
@@ -278,10 +451,10 @@ export default function LoomsPage() {
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs font-semibold">Assigned Labour</Label>
-              <Select onValueChange={(v) => { form.setValue("assignedLabourId", v); form.setValue("assignedLabourName", labour.find(l => l.id === v)?.fullName || ""); }} value={form.watch("assignedLabourId") || ""}>
+              <Select onValueChange={(v) => { const actualVal = v === "none" ? "" : v; form.setValue("assignedLabourId", actualVal); form.setValue("assignedLabourName", labour.find(l => l.id === actualVal)?.fullName || ""); }} value={form.watch("assignedLabourId") || "none"}>
                 <SelectTrigger><SelectValue placeholder="Select labour (optional)" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Unassigned</SelectItem>
+                  <SelectItem value="none">Unassigned</SelectItem>
                   {labour.filter(l => l.activeStatus === "Active" && (l.labourType === "Weaver" || l.labourType === "Helper")).map(l => <SelectItem key={l.id} value={l.id}>{l.fullName} ({l.labourType})</SelectItem>)}
                 </SelectContent>
               </Select>

@@ -216,6 +216,7 @@ export default function FabricsPage() {
   });
 
   const columns: TableColumn<Fabric>[] = [
+    { key: "createdDate", header: "Created Date", render: (item) => <span className="font-mono text-xs text-muted-foreground">{item.createdDate || "25 Jul 2026"}</span>, sortable: true },
     { key: "fabricCode", header: "Code", sortable: true },
     { key: "fabricName", header: "Fabric Quality", sortable: true },
     { key: "construction", header: "Construction Construction", sortable: true },

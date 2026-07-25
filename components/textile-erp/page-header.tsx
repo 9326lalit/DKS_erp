@@ -16,6 +16,23 @@ interface PageHeaderProps {
   className?: string;
 }
 
+import { useLanguage } from "@/lib/i18n/language-context";
+
+const pageTitleTranslationMap: Record<string, string> = {
+  "Factory Master": "navFactoryMaster",
+  "Loom Master": "navLoomMaster",
+  "Party Master": "navPartyMaster",
+  "Labour Master": "navLabourMaster",
+  "Sizing Master": "navSizingMaster",
+  "Sizing Mills": "navSizingMaster",
+  "Sizing Batch": "navSizingYarn",
+  "Tana (Warp)": "navTanaWarp",
+  "Bana (Weft)": "navBanaWeft",
+  "Sales Orders": "navSalesOrder",
+  "Fabric Delivery": "navDeliveryChallan",
+  "Dashboard": "navDashboard"
+};
+
 export function PageHeader({
   title,
   description,
@@ -23,6 +40,11 @@ export function PageHeader({
   actions,
   className
 }: PageHeaderProps) {
+  const { t } = useLanguage();
+  
+  const translationKey = pageTitleTranslationMap[title];
+  const displayTitle = translationKey ? t(translationKey, title) : title;
+
   return (
     <div
       className={cn(
@@ -40,28 +62,32 @@ export function PageHeader({
             >
               <Home className="h-3.5 w-3.5" />
             </Link>
-            {breadcrumbs.map((item, idx) => (
-              <React.Fragment key={idx}>
-                <ChevronRight className="h-3 w-3 shrink-0" />
-                {item.href ? (
-                  <Link
-                    href={item.href}
-                    className="hover:text-foreground transition-colors font-medium"
-                  >
-                    {item.title}
-                  </Link>
-                ) : (
-                  <span className="font-medium text-foreground/80 truncate">
-                    {item.title}
-                  </span>
-                )}
-              </React.Fragment>
-            ))}
+            {breadcrumbs.map((item, idx) => {
+              const itemKey = pageTitleTranslationMap[item.title];
+              const itemTitle = itemKey ? t(itemKey, item.title) : item.title;
+              return (
+                <React.Fragment key={idx}>
+                  <ChevronRight className="h-3 w-3 shrink-0" />
+                  {item.href ? (
+                    <Link
+                      href={item.href}
+                      className="hover:text-foreground transition-colors font-medium font-display"
+                    >
+                      {itemTitle}
+                    </Link>
+                  ) : (
+                    <span className="font-medium text-foreground/80 truncate">
+                      {itemTitle}
+                    </span>
+                  )}
+                </React.Fragment>
+              );
+            })}
           </nav>
         )}
         
         <h1 className="text-2xl font-bold tracking-tight text-foreground font-display">
-          {title}
+          {displayTitle}
         </h1>
         {description && (
           <p className="text-sm text-muted-foreground max-w-2xl">

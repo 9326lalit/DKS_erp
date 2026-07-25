@@ -90,7 +90,7 @@ export default function NewBanaGRNPage() {
                 <Select onValueChange={(v) => form.setValue("linkedPOId", v)} value={form.watch("linkedPOId")}>
                   <SelectTrigger><SelectValue placeholder="Select Open / Partial Bana PO" /></SelectTrigger>
                   <SelectContent>
-                    {openPOs.length === 0 && <SelectItem value="" disabled>No open POs</SelectItem>}
+                    {openPOs.length === 0 && <SelectItem value="none" disabled>No open POs</SelectItem>}
                     {openPOs.map(po => <SelectItem key={po.id} value={po.id}>{po.poNumber} — {po.purchaseFromName} ({po.totalBagsOrdered - po.bagsReceivedSoFar} bags pending)</SelectItem>)}
                   </SelectContent>
                 </Select>

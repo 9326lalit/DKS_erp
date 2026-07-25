@@ -132,32 +132,19 @@ export interface FabricType {
 // ----------------------------------------------------
 
 const MAHARASHTRA_NAMES = [
-  "Yogesh Jakhotiya", "Amit Khairnar", "Sanjay Patil", "Rahul Shinde", "Vijay Deshmukh",
+  "Bhushan (Dhandai Textiles)", "Sumit Patil (Sumit Sizing)", "Sanjay Patil", "Rahul Shinde", "Vijay Deshmukh",
   "Nilesh More", "Sachin Kulkarni", "Prashant Joshi", "Aniket Gaikwad", "Ganesh Kadam",
-  "Rajendra Chavan", "Santosh Mane", "Dinesh Pawar", "Sandip Sawant", "Vikas Kamble",
-  "Abhijit Mohite", "Mahesh Jadhav", "Tushar Ghorpade", "Satish Naik", "Deepak Salunkhe",
-  "Ramesh Thorat", "Sunil Kurade", "Laxman Chougule", "Appasaheb Awade", "Prakash Awade",
-  "Pratap Bhosale", "Babasaheb Ghatage", "Shivaji Shirke", "Balasaheb Dhere", "Tanaji Lad",
-  "Kiran Mule", "Arjun Jagtap", "Siddharth Dinde", "Vinayak Badadare", "Suresh Magdum",
-  "Ravindra Sutar", "Pandurang Lohar", "Dattatray Kumbhar", "Maruti Mali", "Bhagwan Patil",
-  "Sadashiv Gurav", "Kondiba Shelke", "Jaysingrao Halase", "Babgonda Patil", "Subhash Shenavi",
-  "Anna Shinde", "Bapu Khot", "Vishwasrao Naik", "Jaywantrao Awale", "Raju Shetti"
+  "Rajendra Chavan", "Santosh Mane", "Dinesh Pawar", "Sandip Sawant", "Vikas Kamble"
 ];
 
 const SUPPLIER_NAMES = [
-  "Jakhotiya Spinners Pvt Ltd", "Ganesh Yarn Trading", "Sangam Spinning Mills", "Vardhman Textiles Ltd",
-  "Indocount Industries", "Welspun India Yarn Dept", "Oswal Spinning Corp", "Nahar Spinning Mills",
-  "RSWM Limited", "Sutlej Textiles", "Banswara Syntex", "Nitry Yarn Traders",
-  "Ambika Cotton Mills", "Super Spinning Mills", "Pee Vee Textiles", "Loyal Textile Mills",
-  "Ichalkaranji Co-op Spinners", "Dattajirao Kadam Spinners", "Kolhapur Zilla Sahakari Spinning",
-  "Yashwant Sahakari Soot Girni"
+  "Surat Yarn Mills Pvt Ltd", "Ichalkaranji Cotton Suppliers", "Reliance Yarn Industries", "Vardhman Textiles Ltd",
+  "Sangam Spinning Mills", "Indocount Industries", "Welspun India Yarn Dept", "Nahar Spinning Mills"
 ];
 
 const CUSTOMER_NAMES = [
-  "Aashish Fabrics", "Balaji Textiles Ichalkaranji", "Krishna Weaving & Trading", "Vikas Trading Co.",
-  "Dhanlaxmi Fab", "Ambika Processors Client", "Shree Ram Textiles", "Mahavir Fabrics",
-  "Gokul Grey Sales", "Samarth Textile Agency", "Maruti Garments", "Mayur Fabrics Agency",
-  "Rajararam Cotton Mills", "Panchganga Weaving Corp", "Deccan Processors Agent"
+  "Dhandai Fabrics", "Balaji Fabrics Pvt Ltd", "Krishna Fabrics Ichalkaranji", "Vikas Trading Co.",
+  "Dhanlaxmi Fab", "Ambika Processors Client", "Shree Ram Textiles"
 ];
 
 const YARN_COUNTS = [

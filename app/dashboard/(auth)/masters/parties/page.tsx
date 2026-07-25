@@ -56,7 +56,9 @@ const partySchema = z.object({
   accountNumber: z.string().optional(),
   ifscCode: z.string().optional(),
   openingBalance: z.number(),
-  activeStatus: z.enum(["Active", "Inactive"])
+  activeStatus: z.enum(["Active", "Inactive"]),
+  factoryId: z.string().optional(),
+  factoryName: z.string().optional()
 });
 
 type PartyFormValues = z.infer<typeof partySchema>;
@@ -76,13 +78,19 @@ export default function PartiesPage() {
     queryFn: () => mastersApiService.getParties()
   });
 
+  const { data: factories = [] } = useQuery({
+    queryKey: ["factories"],
+    queryFn: () => mastersApiService.getFactories()
+  });
+
   const defaultValues: PartyFormValues = {
     partyName: "", partyType: "Supplier", contactPerson: "", mobileNumber: "",
     gstNumber: "", panNumber: "", address: "", bankName: "", accountNumber: "",
-    ifscCode: "", openingBalance: 0, activeStatus: "Active"
+    ifscCode: "", openingBalance: 0, activeStatus: "Active", factoryId: "", factoryName: ""
   };
 
   const form = useForm<PartyFormValues>({ resolver: zodResolver(partySchema), defaultValues });
+  const selectedPartyType = form.watch("partyType");
 
   const createMutation = useMutation({
     mutationFn: (p: Party) => mastersApiService.createParty(p),
@@ -99,7 +107,7 @@ export default function PartiesPage() {
 
   const handleEditClick = (party: Party) => {
     setEditParty(party); setViewParty(null);
-    form.reset({ partyName: party.partyName, partyType: party.partyType, contactPerson: party.contactPerson || "", mobileNumber: party.mobileNumber, gstNumber: party.gstNumber || "", panNumber: party.panNumber || "", address: party.address, bankName: party.bankName || "", accountNumber: party.accountNumber || "", ifscCode: party.ifscCode || "", openingBalance: party.openingBalance, activeStatus: party.activeStatus });
+    form.reset({ partyName: party.partyName, partyType: party.partyType, contactPerson: party.contactPerson || "", mobileNumber: party.mobileNumber, gstNumber: party.gstNumber || "", panNumber: party.panNumber || "", address: party.address, bankName: party.bankName || "", accountNumber: party.accountNumber || "", ifscCode: party.ifscCode || "", openingBalance: party.openingBalance, activeStatus: party.activeStatus, factoryId: party.factoryId || "", factoryName: party.factoryName || "" });
     setDialogOpen(true);
   };
 
@@ -134,6 +142,7 @@ export default function PartiesPage() {
   };
 
   const columns: TableColumn<Party>[] = [
+    { key: "createdDate", header: "Created Date", render: (item) => <span className="font-mono text-xs text-muted-foreground">{item.createdDate || "25 Jul 2026"}</span>, sortable: true },
     { key: "partyCode", header: "Code", sortable: true },
     { key: "partyName", header: "Party Name", sortable: true },
     {
@@ -141,6 +150,7 @@ export default function PartiesPage() {
       render: (item) => <Badge variant="outline" className={`text-[10px] font-bold ${partyTypeColors[item.partyType] || ""}`}>{item.partyType}</Badge>,
       sortable: true
     },
+    { key: "factoryName", header: "Factory", render: (item) => <span className="text-xs font-semibold">{item.factoryName || "—"}</span> },
     { key: "mobileNumber", header: "Mobile" },
     { key: "gstNumber", header: "GST No.", render: (item) => <span className="uppercase text-xs">{item.gstNumber || "—"}</span> },
     { key: "address", header: "Address", render: (item) => <span className="text-xs text-muted-foreground truncate max-w-[200px] block">{item.address}</span> },
@@ -201,9 +211,10 @@ export default function PartiesPage() {
               <div><span className="text-muted-foreground block font-medium">Contact Person</span><span className="font-semibold">{viewParty.contactPerson || "N/A"}</span></div>
               <div><span className="text-muted-foreground block font-medium">Mobile</span><span className="font-semibold">{viewParty.mobileNumber}</span></div>
             </div>
-            <div className="grid grid-cols-2 gap-4 border-b border-border/10 pb-4">
+            <div className="grid grid-cols-3 gap-4 border-b border-border/10 pb-4">
               <div><span className="text-muted-foreground block font-medium">GST Number</span><span className="font-semibold uppercase">{viewParty.gstNumber || "N/A"}</span></div>
               <div><span className="text-muted-foreground block font-medium">PAN Number</span><span className="font-semibold uppercase">{viewParty.panNumber || "N/A"}</span></div>
+              <div><span className="text-muted-foreground block font-medium">Associated Factory</span><span className="font-semibold">{viewParty.factoryName || "None / All"}</span></div>
             </div>
             <div className="border-b border-border/10 pb-4"><span className="text-muted-foreground block font-medium">Address</span><p className="font-semibold mt-1">{viewParty.address}</p></div>
             {(viewParty.bankName || viewParty.accountNumber) && (
@@ -262,6 +273,18 @@ export default function PartiesPage() {
                 {form.formState.errors.panNumber && <p className="text-[10px] text-destructive">{form.formState.errors.panNumber.message}</p>}
               </div>
             </div>
+            {(selectedPartyType === "Supplier" || selectedPartyType === "Buyer") && (
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold">Associated Factory</Label>
+                <Select onValueChange={(v) => { const actualVal = v === "none" ? "" : v; form.setValue("factoryId", actualVal); form.setValue("factoryName", factories.find(f => f.id === actualVal)?.factoryName || ""); }} value={form.watch("factoryId") || "none"}>
+                  <SelectTrigger><SelectValue placeholder="Select factory (optional)" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">None / All Factories</SelectItem>
+                    {factories.map(f => <SelectItem key={f.id} value={f.id}>{f.factoryName}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div className="space-y-1.5">
               <Label className="text-xs font-semibold">Full Address *</Label>
               <Textarea rows={2} {...form.register("address")} placeholder="Plot No., Area, City, District, State - PIN" />

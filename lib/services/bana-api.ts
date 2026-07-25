@@ -37,6 +37,10 @@ export const banaApiService = {
     useBanaStore.getState().updateGRN(grn);
     return grn;
   },
+  async deleteGRN(id: string): Promise<void> {
+    await delay(200);
+    useBanaStore.getState().deleteGRN(id);
+  },
 
   async getPIs(): Promise<BanaPI[]> {
     await delay(200);
@@ -51,6 +55,10 @@ export const banaApiService = {
     await delay(300);
     useBanaStore.getState().updatePI(pi);
     return pi;
+  },
+  async deletePI(id: string): Promise<void> {
+    await delay(200);
+    useBanaStore.getState().deletePI(id);
   },
 
   getStock() {

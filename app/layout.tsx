@@ -12,6 +12,7 @@ import { ActiveThemeProvider } from "@/components/active-theme";
 import { DEFAULT_THEME } from "@/lib/themes";
 import { Toaster } from "@/components/ui/sonner";
 import { QueryProvider } from "@/lib/services/query-provider";
+import { LanguageProvider } from "@/lib/i18n/language-context";
 
 export default async function RootLayout({
   children
@@ -45,9 +46,11 @@ export default async function RootLayout({
           enableSystem
           disableTransitionOnChange>
           <ActiveThemeProvider initialTheme={themeSettings}>
-            <QueryProvider>
-              {children}
-            </QueryProvider>
+            <LanguageProvider>
+              <QueryProvider>
+                {children}
+              </QueryProvider>
+            </LanguageProvider>
             <Toaster position="top-center" richColors />
             <NextTopLoader color="var(--primary)" showSpinner={false} height={2} shadow-sm="none" />
             {process.env.NODE_ENV === "production" ? <GoogleAnalyticsInit /> : null}

@@ -21,6 +21,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { LoadingState } from "@/components/textile-erp/ui-states";
+import { useLanguage } from "@/lib/i18n/language-context";
 
 export interface TableColumn<T> {
   key: string;
@@ -52,19 +53,52 @@ export function MasterTable<T extends { id: string; status?: string }>({
   customRowActions,
   onBulkDelete
 }: MasterTableProps<T>) {
-  // Sort State
-  const [sortKey, setSortKey] = useState<string>("");
+  const { t } = useLanguage();
+
+  // Sort State - default ascending
+  const [sortKey, setSortKey] = useState<string>(columns[0]?.key || "");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
   // Selection state
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
-  // Pagination state
+  // Pagination state with custom page size limit selector
   const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 10;
+  const [pageSize, setPageSize] = useState(10);
 
+  // Sort logic (Ascending by default with natural alphanumeric comparison)
+  // MUST be above any early returns to satisfy Rules of Hooks
+  const sortedData = React.useMemo(() => {
+    if (!data) return [];
+    const key = sortKey || columns[0]?.key || "id";
+    return [...data].sort((a, b) => {
+      let aVal = (a as any)[key];
+      let bVal = (b as any)[key];
+
+      if (aVal === undefined || aVal === null) aVal = "";
+      if (bVal === undefined || bVal === null) bVal = "";
+
+      // Numerical comparison
+      if (typeof aVal === "number" && typeof bVal === "number") {
+        return sortOrder === "asc" ? aVal - bVal : bVal - aVal;
+      }
+
+      // Natural alphanumeric string comparison (e.g. L-001 < L-002 < L-010)
+      const cmp = String(aVal).localeCompare(String(bVal), undefined, { numeric: true, sensitivity: "base" });
+      return sortOrder === "asc" ? cmp : -cmp;
+    });
+  }, [data, sortKey, sortOrder, columns]);
+
+  // Pagination logic
+  const totalEntries = sortedData.length;
+  const totalPages = Math.ceil(totalEntries / pageSize) || 1;
+  const startIndex = (currentPage - 1) * pageSize;
+  const paginatedData = sortedData.slice(startIndex, startIndex + pageSize);
+  const endIndex = Math.min(startIndex + pageSize, totalEntries);
+
+  // Early return for loading — AFTER all hooks are declared
   if (isLoading) {
-    return <LoadingState message="Fetching master details table..." />;
+    return <LoadingState message={t("fetchingData", "Fetching master details table...")} />;
   }
 
   // Handle Sort Toggle
@@ -77,126 +111,119 @@ export function MasterTable<T extends { id: string; status?: string }>({
     }
   };
 
-  // Sort logic
-  const sortedData = [...data].sort((a, b) => {
-    if (!sortKey) return 0;
-    
-    let aVal = (a as any)[sortKey];
-    let bVal = (b as any)[sortKey];
-    
-    if (typeof aVal === "string") {
-      aVal = aVal.toLowerCase();
-      bVal = bVal.toLowerCase();
-    }
-
-    if (aVal < bVal) return sortOrder === "asc" ? -1 : 1;
-    if (aVal > bVal) return sortOrder === "asc" ? 1 : -1;
-    return 0;
-  });
-
-  // Pagination logic
-  const totalEntries = sortedData.length;
-  const totalPages = Math.ceil(totalEntries / pageSize) || 1;
-  const startIndex = (currentPage - 1) * pageSize;
-  const endIndex = Math.min(startIndex + pageSize, totalEntries);
-  const paginatedData = sortedData.slice(startIndex, endIndex);
-
-  // Selection toggle
-  const toggleSelectAll = (checked: boolean) => {
+  const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      const allIds = new Set(paginatedData.map((item) => item.id));
-      setSelectedIds(allIds);
+      setSelectedIds(new Set(paginatedData.map((item) => item.id)));
     } else {
       setSelectedIds(new Set());
     }
   };
 
-  const toggleSelectRow = (id: string, checked: boolean) => {
-    const updated = new Set(selectedIds);
+  const handleSelectOne = (id: string, checked: boolean) => {
+    const next = new Set(selectedIds);
     if (checked) {
-      updated.add(id);
+      next.add(id);
     } else {
-      updated.delete(id);
+      next.delete(id);
     }
-    setSelectedIds(updated);
+    setSelectedIds(next);
   };
 
-  const isAllSelected = paginatedData.length > 0 && paginatedData.every((item) => selectedIds.has(item.id));
-  const isSomeSelected = paginatedData.length > 0 && paginatedData.some((item) => selectedIds.has(item.id)) && !isAllSelected;
-
-  const handleBulkDeleteClick = () => {
-    if (onBulkDelete) {
-      const selectedItems = data.filter((item) => selectedIds.has(item.id));
-      onBulkDelete(selectedItems);
-      setSelectedIds(new Set());
-    }
-  };
+  const isAllSelected =
+    paginatedData.length > 0 && paginatedData.every((item) => selectedIds.has(item.id));
 
   return (
-    <div className="space-y-4">
-      {/* Bulk actions banner */}
-      {selectedIds.size > 0 && onBulkDelete && (
-        <div className="flex items-center justify-between p-3 rounded-lg border border-primary/20 bg-primary/[0.02] text-xs font-semibold animate-in slide-in-from-top-1.5 duration-200">
-          <div className="text-foreground">
-            {selectedIds.size} row(s) selected
-          </div>
-          <Button variant="destructive" size="sm" onClick={handleBulkDeleteClick} className="h-8 py-1 cursor-pointer">
-            Bulk Delete Selected
-          </Button>
+    <div className="flex flex-col gap-4">
+      {/* Bulk Action Header */}
+      {selectedIds.size > 0 && (
+        <div className="flex items-center justify-between rounded-lg bg-accent/50 px-4 py-2 text-xs">
+          <span className="font-semibold text-accent-foreground">
+            {selectedIds.size} item(s) selected
+          </span>
+          {onBulkDelete && (
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => {
+                const selectedItems = data.filter((item) => selectedIds.has(item.id));
+                onBulkDelete(selectedItems);
+                setSelectedIds(new Set());
+              }}
+              className="h-7 text-xs cursor-pointer gap-1"
+            >
+              <Trash className="h-3 w-3" />
+              {t("delete", "Delete Selected")}
+            </Button>
+          )}
         </div>
       )}
 
-      {/* Main Table Layout */}
-      <div className="rounded-xl border border-border/40 overflow-hidden shadow-sm bg-card">
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-muted/10 hover:bg-muted/10 border-b border-border/10">
-              <TableHead className="w-12 h-11 text-center">
-                <Checkbox
-                  checked={isAllSelected || (isSomeSelected ? "indeterminate" : false)}
-                  onCheckedChange={(checked) => toggleSelectAll(!!checked)}
-                  aria-label="Select all"
-                />
-              </TableHead>
-              
+      {/* Main Table Container with Horizontal Scroll */}
+      <div className="rounded-xl border border-border/40 overflow-x-auto shadow-2xs">
+        <Table className="min-w-[950px]">
+          <TableHeader className="bg-muted/30">
+            <TableRow>
+              {onBulkDelete && (
+                <TableHead className="w-[40px]">
+                  <Checkbox
+                    checked={isAllSelected}
+                    onCheckedChange={handleSelectAll}
+                    aria-label="Select all"
+                  />
+                </TableHead>
+              )}
+
               {columns.map((col) => (
-                <TableHead key={col.key} className="text-xs font-bold text-muted-foreground h-11 select-none">
+                <TableHead key={col.key} className="text-xs font-bold text-foreground py-3">
                   {col.sortable ? (
-                    <button
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={() => handleSort(col.key)}
-                      className="flex items-center gap-1 hover:text-foreground cursor-pointer focus:outline-none"
+                      className="-ml-3 h-8 text-xs font-bold hover:bg-accent cursor-pointer"
                     >
                       {col.header}
-                      <ArrowUpDown className="h-3 w-3 shrink-0 opacity-70" />
-                    </button>
+                      <ArrowUpDown className="ml-1 h-3 w-3 opacity-70" />
+                    </Button>
                   ) : (
                     col.header
                   )}
                 </TableHead>
               ))}
-              
-              <TableHead className="w-16 h-11 text-right text-muted-foreground text-xs font-bold">Actions</TableHead>
+
+              <TableHead className="w-[80px] text-right font-bold text-xs text-foreground py-3">
+                {t("actions", "Actions")}
+              </TableHead>
             </TableRow>
           </TableHeader>
-          
-          <TableBody className="text-xs">
+
+          <TableBody>
             {paginatedData.length === 0 ? (
-              <TableRow className="hover:bg-transparent">
-                <TableCell colSpan={columns.length + 2} className="h-[200px] text-center text-muted-foreground font-semibold">
-                  No records matching standard filter settings.
+              <TableRow>
+                <TableCell
+                  colSpan={columns.length + (onBulkDelete ? 2 : 1)}
+                  className="h-32 text-center text-xs text-muted-foreground"
+                >
+                  {t("noDataFound", "No records found.")}
                 </TableCell>
               </TableRow>
             ) : (
               paginatedData.map((item) => (
-                <TableRow key={item.id} className="hover:bg-muted/5 border-b border-border/10">
-                  <TableCell className="text-center">
-                    <Checkbox
-                      checked={selectedIds.has(item.id)}
-                      onCheckedChange={(checked) => toggleSelectRow(item.id, !!checked)}
-                      aria-label={`Select row ${item.id}`}
-                    />
-                  </TableCell>
-                  
+                <TableRow
+                  key={item.id}
+                  className="hover:bg-muted/20 transition-colors data-[state=selected]:bg-muted/30"
+                  data-state={selectedIds.has(item.id) ? "selected" : undefined}
+                >
+                  {onBulkDelete && (
+                    <TableCell className="py-3">
+                      <Checkbox
+                        checked={selectedIds.has(item.id)}
+                        onCheckedChange={(checked) => handleSelectOne(item.id, !!checked)}
+                        aria-label={`Select row ${item.id}`}
+                      />
+                    </TableCell>
+                  )}
+
                   {columns.map((col) => (
                     <TableCell key={col.key} className="py-3">
                       {col.render ? col.render(item) : (item as any)[col.key]}
@@ -216,13 +243,13 @@ export function MasterTable<T extends { id: string; status?: string }>({
                           {onView && (
                             <DropdownMenuItem onClick={() => onView(item)} className="cursor-pointer gap-2">
                               <Eye className="h-3.5 w-3.5 opacity-80" />
-                              View Details
+                              {t("view", "View Details")}
                             </DropdownMenuItem>
                           )}
                           {onEdit && (
                             <DropdownMenuItem onClick={() => onEdit(item)} className="cursor-pointer gap-2">
                               <Pencil className="h-3.5 w-3.5 opacity-80" />
-                              Edit Details
+                              {t("edit", "Edit Details")}
                             </DropdownMenuItem>
                           )}
                           {onStatusToggle && item.status && (
@@ -251,7 +278,7 @@ export function MasterTable<T extends { id: string; status?: string }>({
                                 className="text-destructive cursor-pointer focus:bg-destructive/10! focus:text-destructive! gap-2"
                               >
                                 <Trash className="h-3.5 w-3.5 opacity-80" />
-                                Delete
+                                {t("delete", "Delete")}
                               </DropdownMenuItem>
                             </>
                           )}
@@ -266,13 +293,31 @@ export function MasterTable<T extends { id: string; status?: string }>({
         </Table>
       </div>
 
-      {/* Pagination Controls */}
+      {/* Pagination & Page Limit Controls */}
       {totalEntries > 0 && (
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-2">
-          <div className="text-xs text-muted-foreground font-semibold">
-            Showing <span className="font-bold text-foreground">{startIndex + 1}</span> to{" "}
-            <span className="font-bold text-foreground">{endIndex}</span> of{" "}
-            <span className="font-bold text-foreground">{totalEntries}</span> entries
+          <div className="flex items-center gap-3 text-xs text-muted-foreground font-semibold">
+            <span>
+              Showing <span className="font-bold text-foreground">{startIndex + 1}</span> to{" "}
+              <span className="font-bold text-foreground">{endIndex}</span> of{" "}
+              <span className="font-bold text-foreground">{totalEntries}</span> entries
+            </span>
+            <div className="flex items-center gap-1.5 ml-2">
+              <span className="text-[11px] font-bold text-muted-foreground uppercase">Rows:</span>
+              <select
+                value={pageSize}
+                onChange={(e) => {
+                  setPageSize(Number(e.target.value));
+                  setCurrentPage(1);
+                }}
+                className="h-7 px-2 text-xs font-semibold bg-background border border-border/40 rounded-md focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
+              >
+                <option value={10}>10</option>
+                <option value={25}>25</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+              </select>
+            </div>
           </div>
           
           <div className="flex items-center gap-1.5 self-end sm:self-auto">

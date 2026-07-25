@@ -19,9 +19,12 @@ import { Button } from "@/components/ui/button";
 import { DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { navItems } from "@/components/layout/sidebar/nav-main";
 
+import { useLanguage } from "@/lib/i18n/language-context";
+
 export default function Search() {
   const [open, setOpen] = useState(false);
   const router = useRouter();
+  const { t } = useLanguage();
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -40,7 +43,7 @@ export default function Search() {
         <SearchIcon className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
         <Input
           className="h-9 w-full cursor-pointer rounded-md border pr-4 pl-10 text-sm shadow-xs"
-          placeholder="Search..."
+          placeholder={t("searchPlaceholder", "Search looms, parties, yarn batch...")}
           type="search"
           onFocus={() => setOpen(true)}
         />
@@ -60,7 +63,7 @@ export default function Search() {
             <DialogTitle></DialogTitle>
           </DialogHeader>
         </VisuallyHidden>
-        <CommandInput placeholder="Type a command or search..." />
+        <CommandInput placeholder={t("searchPlaceholder", "Type a command or search...")} />
         <CommandList>
           <CommandEmpty>No results found.</CommandEmpty>
           {navItems.map((route) => (

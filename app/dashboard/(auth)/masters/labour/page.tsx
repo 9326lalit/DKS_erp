@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { toast } from "sonner";
-import { Trash2 } from "lucide-react";
+import { Trash2, ChevronDown } from "lucide-react";
 
 import { mastersApiService } from "@/lib/services/masters-api";
 import { Labour } from "@/lib/store/use-masters-store";
@@ -15,6 +15,7 @@ import { PageHeader } from "@/components/textile-erp/page-header";
 import { MasterToolbar } from "@/components/textile-erp/master-toolbar";
 import { MasterTable, TableColumn } from "@/components/textile-erp/master-table";
 import { MasterDialog } from "@/components/textile-erp/master-dialog";
+import { DetailViewCard } from "@/components/textile-erp/detail-view-card";
 import { StatusBadge } from "@/components/textile-erp/status-badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,6 +23,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle
@@ -73,7 +76,30 @@ export default function LabourPage() {
   const form = useForm<LabourFormValues>({ resolver: zodResolver(labourSchema), defaultValues });
 
   const selectedFactoryId = form.watch("linkedFactoryId");
-  const filteredLooms = looms.filter(l => l.factoryId === selectedFactoryId);
+  const filteredLooms = looms
+    .filter(l => l.factoryId === selectedFactoryId)
+    .sort((a, b) => a.loomNumber.localeCompare(b.loomNumber, undefined, { numeric: true }));
+
+  const currentLoomIds = form.watch("linkedLoomId") ? (form.watch("linkedLoomId") || "").split(",").filter(Boolean) : [];
+
+  const handleLoomToggle = (loomId: string) => {
+    let newLoomIds = [...currentLoomIds];
+    if (newLoomIds.includes(loomId)) {
+      newLoomIds = newLoomIds.filter(id => id !== loomId);
+    } else {
+      newLoomIds.push(loomId);
+    }
+    newLoomIds = newLoomIds.filter(Boolean);
+    
+    const finalIds = newLoomIds.join(",");
+    const finalNumbers = newLoomIds
+      .map(id => looms.find(l => l.id === id)?.loomNumber)
+      .filter(Boolean)
+      .join(", ");
+    
+    form.setValue("linkedLoomId", finalIds);
+    form.setValue("linkedLoomNumber", finalNumbers);
+  };
 
   const createMutation = useMutation({
     mutationFn: (l: Labour) => mastersApiService.createLabour(l),
@@ -98,8 +124,12 @@ export default function LabourPage() {
 
   const handleFormSubmit = (values: LabourFormValues) => {
     const factory = factories.find(f => f.id === values.linkedFactoryId);
-    const loom = looms.find(l => l.id === values.linkedLoomId);
-    const data = { ...values, linkedFactoryName: factory?.factoryName || values.linkedFactoryName, linkedLoomNumber: loom?.loomNumber || values.linkedLoomNumber };
+    const ids = values.linkedLoomId ? values.linkedLoomId.split(",") : [];
+    const resolvedLoomNumbers = ids
+      .map(id => looms.find(l => l.id === id)?.loomNumber)
+      .filter(Boolean)
+      .join(", ");
+    const data = { ...values, linkedFactoryName: factory?.factoryName || values.linkedFactoryName, linkedLoomNumber: resolvedLoomNumbers || values.linkedLoomNumber };
     // Mask Aadhaar if entered
     if (data.aadhaarNumber && data.aadhaarNumber.replace(/\D/g, "").length === 12) {
       const digits = data.aadhaarNumber.replace(/\D/g, "");
@@ -137,12 +167,36 @@ export default function LabourPage() {
   const columns: TableColumn<Labour>[] = [
     { key: "labourId", header: "Labour ID", sortable: true },
     { key: "fullName", header: "Full Name", sortable: true },
-    { key: "labourType", header: "Type", render: (item) => <Badge variant="outline" className={`text-[10px] font-bold ${labourTypeColors[item.labourType] || ""}`}>{item.labourType}</Badge>, sortable: true },
-    { key: "linkedFactoryName", header: "Factory", render: (item) => <span className="text-xs text-muted-foreground">{item.linkedFactoryName}</span>, sortable: true },
-    { key: "linkedLoomNumber", header: "Loom", render: (item) => <span className="text-xs">{item.linkedLoomNumber || "—"}</span> },
-    { key: "mobileNumber", header: "Mobile" },
-    { key: "rateType", header: "Rate Type", render: (item) => <span className="text-xs">{item.rateType}</span> },
-    { key: "rate", header: "Rate (₹)", render: (item) => <span className="font-semibold">₹{item.rate.toLocaleString()}</span> },
+    { key: "labourType", header: "Role / Type", render: (item) => <Badge variant="outline" className={`text-[10px] font-bold ${labourTypeColors[item.labourType] || ""}`}>{item.labourType}</Badge>, sortable: true },
+    { key: "linkedFactoryName", header: "Factory Unit", render: (item) => <span className="text-xs text-muted-foreground">{item.linkedFactoryName}</span>, sortable: true },
+    {
+      key: "linkedLoomNumber",
+      header: "Assigned Looms",
+      render: (item) => {
+        if (!item.linkedLoomNumber) return <span className="text-muted-foreground text-xs">—</span>;
+        const loomList = item.linkedLoomNumber.split(",").map(s => s.trim()).filter(Boolean);
+        if (loomList.length === 0) return <span className="text-muted-foreground text-xs">—</span>;
+        const visible = loomList.slice(0, 2);
+        const extraCount = loomList.length - 2;
+        return (
+          <div className="flex flex-wrap items-center gap-1">
+            {visible.map((loom, i) => (
+              <Badge key={i} variant="secondary" className="text-[10px] font-mono px-1.5 py-0">
+                {loom}
+              </Badge>
+            ))}
+            {extraCount > 0 && (
+              <Badge variant="outline" className="text-[10px] font-bold text-primary px-1.5 py-0">
+                +{extraCount} more
+              </Badge>
+            )}
+          </div>
+        );
+      }
+    },
+    { key: "mobileNumber", header: "Mobile", render: (item) => <span className="font-mono text-xs">{item.mobileNumber}</span> },
+    { key: "rateType", header: "Wage Basis", render: (item) => <span className="text-xs">{item.rateType}</span> },
+    { key: "rate", header: "Wage Rate", render: (item) => <span className="font-bold text-primary font-mono">₹{item.rate.toLocaleString()} / {item.rateType === "Per Metre" ? "Mtr" : item.rateType === "Daily" ? "Day" : "Mo"}</span>, sortable: true },
     { key: "activeStatus", header: "Status", render: (item) => <Badge variant="outline" className={`text-[10px] font-bold ${activeStatusColors[item.activeStatus] || ""}`}>{item.activeStatus}</Badge>, sortable: true }
   ];
 
@@ -184,42 +238,73 @@ export default function LabourPage() {
       <MasterDialog
         isOpen={dialogOpen}
         onClose={() => { setDialogOpen(false); setEditLabour(null); setViewLabour(null); }}
-        title={viewLabour ? `Labour: ${viewLabour.fullName}` : editLabour ? `Edit: ${editLabour.fullName}` : "Register New Labour"}
-        description={viewLabour ? `Labour ID: ${viewLabour.labourId} | Type: ${viewLabour.labourType}` : "Register worker details. Aadhaar number will be automatically masked on save."}
+        title={viewLabour ? `Worker Details: ${viewLabour.fullName}` : editLabour ? `Edit Worker: ${editLabour.fullName}` : "Register New Labour"}
+        description={viewLabour ? `Labour ID: ${viewLabour.labourId} | Role: ${viewLabour.labourType}` : "Register worker details. Aadhaar number will be automatically masked on save."}
       >
         {viewLabour ? (
-          <div className="space-y-4 text-xs">
-            <div className="grid grid-cols-2 gap-4 border-b pb-4 border-border/10">
-              <div><span className="text-muted-foreground block font-medium">Full Name</span><span className="text-sm font-bold">{viewLabour.fullName}</span></div>
-              <div><span className="text-muted-foreground block font-medium">Labour Type</span><Badge variant="outline" className={`font-bold ${labourTypeColors[viewLabour.labourType] || ""}`}>{viewLabour.labourType}</Badge></div>
+          <DetailViewCard
+            title={viewLabour.fullName}
+            subtitle={`Labour ID: ${viewLabour.labourId} • Factory: ${viewLabour.linkedFactoryName}`}
+            statusBadge={
+              <Badge variant="outline" className={`text-[10px] font-bold ${activeStatusColors[viewLabour.activeStatus] || ""}`}>
+                {viewLabour.activeStatus}
+              </Badge>
+            }
+            sections={[
+              {
+                title: "Worker Profile & Role",
+                fields: [
+                  { label: "Full Name", value: viewLabour.fullName, highlight: true },
+                  { label: "Worker Role / Type", value: viewLabour.labourType, badge: true, badgeClass: labourTypeColors[viewLabour.labourType] },
+                  { label: "Factory Unit", value: viewLabour.linkedFactoryName },
+                  { label: "Mobile Number", value: viewLabour.mobileNumber, mono: true, highlight: true },
+                  { label: "Aadhaar Card", value: viewLabour.aadhaarNumber || "N/A", mono: true },
+                  { label: "Date of Joining", value: viewLabour.joiningDate, mono: true }
+                ]
+              },
+              {
+                title: "Wage Rate & Banking Info",
+                fields: [
+                  { label: "Wage Basis", value: viewLabour.rateType },
+                  { label: "Wage Rate", value: `₹${viewLabour.rate.toLocaleString()} / ${viewLabour.rateType === "Per Metre" ? "Metre" : viewLabour.rateType === "Daily" ? "Day" : "Month"}`, highlight: true, mono: true },
+                  { label: "Bank Name", value: viewLabour.bankName || "—" },
+                  { label: "Account Number", value: viewLabour.accountNumber || "—", mono: true },
+                  { label: "IFSC Code", value: viewLabour.ifscCode || "—", mono: true }
+                ]
+              }
+            ]}
+          >
+            {/* Assigned Looms Section */}
+            <div className="p-4 bg-muted/20 border border-border/30 rounded-xl space-y-2">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
+                Assigned Power Looms
+              </span>
+              {viewLabour.linkedLoomNumber ? (
+                <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                  {viewLabour.linkedLoomNumber.split(",").map((loom, idx) => (
+                    <Badge key={idx} variant="secondary" className="text-xs font-mono font-bold px-2 py-0.5">
+                      {loom.trim()}
+                    </Badge>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground italic">No specific looms assigned (Shared Shift Worker)</p>
+              )}
             </div>
-            <div className="grid grid-cols-2 gap-4 border-b pb-4 border-border/10">
-              <div><span className="text-muted-foreground block font-medium">Factory</span><span className="font-semibold">{viewLabour.linkedFactoryName}</span></div>
-              <div><span className="text-muted-foreground block font-medium">Linked Loom</span><span className="font-semibold">{viewLabour.linkedLoomNumber || "Not assigned"}</span></div>
-            </div>
-            <div className="grid grid-cols-3 gap-4 border-b pb-4 border-border/10">
-              <div><span className="text-muted-foreground block font-medium">Mobile</span><span className="font-semibold">{viewLabour.mobileNumber}</span></div>
-              <div><span className="text-muted-foreground block font-medium">Aadhaar</span><span className="font-semibold">{viewLabour.aadhaarNumber || "N/A"}</span></div>
-              <div><span className="text-muted-foreground block font-medium">Date of Birth</span><span className="font-semibold">{viewLabour.dateOfBirth || "N/A"}</span></div>
-            </div>
-            <div className="grid grid-cols-3 gap-4 border-b pb-4 border-border/10">
-              <div><span className="text-muted-foreground block font-medium">Joining Date</span><span className="font-semibold">{viewLabour.joiningDate}</span></div>
-              <div><span className="text-muted-foreground block font-medium">Rate Type</span><span className="font-semibold">{viewLabour.rateType}</span></div>
-              <div><span className="text-muted-foreground block font-medium">Rate</span><span className="font-bold text-foreground">₹{viewLabour.rate.toLocaleString()}</span></div>
-            </div>
-            {(viewLabour.bankName || viewLabour.accountNumber) && (
-              <div className="grid grid-cols-3 gap-4 border-b pb-4 border-border/10">
-                <div><span className="text-muted-foreground block font-medium">Bank</span><span className="font-semibold">{viewLabour.bankName || "—"}</span></div>
-                <div><span className="text-muted-foreground block font-medium">A/C No.</span><span className="font-semibold">{viewLabour.accountNumber || "—"}</span></div>
-                <div><span className="text-muted-foreground block font-medium">IFSC</span><span className="font-semibold">{viewLabour.ifscCode || "—"}</span></div>
+
+            {viewLabour.address && (
+              <div className="p-3 bg-card border border-border/30 rounded-lg">
+                <span className="text-[10px] font-bold text-muted-foreground uppercase block">Residential Address</span>
+                <p className="text-xs mt-1 text-foreground">{viewLabour.address}</p>
               </div>
             )}
-            <div className="grid grid-cols-2 gap-4">
-              <div><span className="text-muted-foreground block font-medium">Address</span><span className="font-semibold">{viewLabour.address || "N/A"}</span></div>
-              <div><span className="text-muted-foreground block font-medium">Status</span><Badge variant="outline" className={`font-bold ${activeStatusColors[viewLabour.activeStatus] || ""}`}>{viewLabour.activeStatus}</Badge></div>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" size="sm" onClick={() => setDialogOpen(false)} className="h-8 px-6 cursor-pointer">
+                Close Details
+              </Button>
             </div>
-            <div className="flex justify-end pt-2"><Button variant="outline" onClick={() => setDialogOpen(false)}>Close</Button></div>
-          </div>
+          </DetailViewCard>
         ) : (
           <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
@@ -250,15 +335,45 @@ export default function LabourPage() {
                 </Select>
                 {form.formState.errors.linkedFactoryId && <p className="text-[10px] text-destructive">{form.formState.errors.linkedFactoryId.message}</p>}
               </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold">Linked Loom (optional)</Label>
-                <Select onValueChange={(v) => { form.setValue("linkedLoomId", v); form.setValue("linkedLoomNumber", looms.find(l => l.id === v)?.loomNumber || ""); }} value={form.watch("linkedLoomId") || ""} disabled={!selectedFactoryId}>
-                  <SelectTrigger><SelectValue placeholder="Select loom" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">No loom assigned</SelectItem>
-                    {filteredLooms.map(l => <SelectItem key={l.id} value={l.id}>{l.loomNumber} ({l.loomType})</SelectItem>)}
-                  </SelectContent>
-                </Select>
+              <div className="space-y-1.5 flex flex-col justify-end">
+                <Label className="text-xs font-semibold">Linked Looms (optional)</Label>
+                <Popover>
+                  <PopoverTrigger asChild disabled={!selectedFactoryId}>
+                    <Button variant="outline" className="w-full justify-between h-9 text-xs font-normal px-3 cursor-pointer border border-input bg-background hover:bg-accent hover:text-accent-foreground">
+                      <span className="truncate">
+                        {currentLoomIds.length > 0 
+                          ? `${currentLoomIds.length} Loom(s) Selected (${form.watch("linkedLoomNumber")})`
+                          : "Select loom(s)"
+                        }
+                      </span>
+                      <ChevronDown className="h-4 w-4 opacity-50 shrink-0" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[300px] p-2 bg-popover text-popover-foreground border shadow-md rounded-md" align="start">
+                    <div className="space-y-2 max-h-[200px] overflow-y-auto pr-1">
+                      {filteredLooms.length === 0 ? (
+                        <p className="text-[11px] text-muted-foreground text-center py-4">No looms found in selected factory</p>
+                      ) : (
+                        filteredLooms.map(l => {
+                          const isChecked = currentLoomIds.includes(l.id);
+                          return (
+                            <div key={l.id} className="flex items-center space-x-2 rounded-md p-1.5 hover:bg-muted/50 cursor-pointer" onClick={() => handleLoomToggle(l.id)}>
+                              <Checkbox 
+                                id={`loom-${l.id}`} 
+                                checked={isChecked} 
+                                onCheckedChange={() => handleLoomToggle(l.id)} 
+                                className="cursor-pointer"
+                              />
+                              <span className="text-xs font-medium leading-none cursor-pointer flex-1 select-none">
+                                {l.loomNumber} <span className="text-[10px] text-muted-foreground ml-1">({l.loomType})</span>
+                              </span>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  </PopoverContent>
+                </Popover>
               </div>
             </div>
             <div className="grid gap-4 sm:grid-cols-3">

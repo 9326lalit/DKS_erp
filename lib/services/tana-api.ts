@@ -39,6 +39,10 @@ export const tanaApiService = {
     useTanaStore.getState().updateGRN(grn);
     return grn;
   },
+  async deleteGRN(id: string): Promise<void> {
+    await delay(200);
+    useTanaStore.getState().deleteGRN(id);
+  },
 
   // Purchase Invoices
   async getPIs(): Promise<TanaPI[]> {
@@ -54,6 +58,10 @@ export const tanaApiService = {
     await delay(300);
     useTanaStore.getState().updatePI(pi);
     return pi;
+  },
+  async deletePI(id: string): Promise<void> {
+    await delay(200);
+    useTanaStore.getState().deletePI(id);
   },
 
   // Stock

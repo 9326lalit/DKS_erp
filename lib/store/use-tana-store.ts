@@ -30,14 +30,42 @@ export { numberToWords };
 // ----------------------------------------------------
 // DOCUMENT NUMBER GENERATOR
 // ----------------------------------------------------
-export function generateDocNumber(type: "TANA-PO" | "TANA-GRN" | "TANA-PI", sequence: number): string {
-  const year = new Date().getFullYear();
-  return `${type}-${year}-${String(sequence).padStart(4, "0")}`;
+export function generateDocNumber(type: "TANA-PO" | "TANA-GRN" | "TANA-PI" | "BANA-PO" | "BANA-GRN" | "BANA-PI", sequence: number, dateStr?: string): string {
+  const d = dateStr ? new Date(dateStr) : new Date();
+  const YYYY = d.getFullYear();
+  const MM = String(d.getMonth() + 1).padStart(2, "0");
+  const DD = String(d.getDate()).padStart(2, "0");
+  const seqStr = String(sequence).padStart(4, "0");
+
+  if (type === "TANA-PO") {
+    return `TANA/PO/${YYYY}/${MM}/${DD}/${seqStr}`;
+  }
+  if (type === "BANA-PO") {
+    return `BANA/PO/${YYYY}/${MM}/${DD}/${seqStr}`;
+  }
+  return `${type}-${YYYY}-${seqStr}`;
 }
 
 // ----------------------------------------------------
 // TANA INTERFACES
 // ----------------------------------------------------
+
+export interface POItem {
+  id: string;
+  itemName: string;
+  hsnCode: string;
+  totalBagsOrdered: number;
+  perBagWeightKg: number;
+  totalWeightKg: number;
+  ratePerKg: number;
+  grossAmount: number;
+  cgstPercent: number;
+  sgstPercent: number;
+  cgstAmount: number;
+  sgstAmount: number;
+  totalTaxAmount: number;
+  netPayable: number;
+}
 
 export interface TanaPO {
   id: string;
@@ -67,6 +95,7 @@ export interface TanaPO {
   totalTaxAmount: number; // auto
   netPayable: number; // auto: gross + tax
   amountInWords: string; // auto
+  items?: POItem[];
   // Status
   bagsReceivedSoFar: number; // sum of GRNs
   status: "Open" | "Partially Received" | "Closed";
@@ -158,10 +187,12 @@ interface TanaState {
   // GRN CRUD
   createGRN: (grn: TanaGRN) => void;
   updateGRN: (grn: TanaGRN) => void;
+  deleteGRN: (id: string) => void;
 
   // PI CRUD
   createPI: (pi: TanaPI) => void;
   updatePI: (pi: TanaPI) => void;
+  deletePI: (id: string) => void;
 
   // Stock management
   deductRawStock: (bags: number, weightKg: number) => void;
@@ -182,14 +213,14 @@ const buildSeeds = () => {
   const seededPOs: TanaPO[] = [
     {
       id: "TANA-PO-ID-0001",
-      poNumber: "TANA-PO-2026-0001",
+      poNumber: "TANA/PO/2026/04/05/0001",
       poDate: "2026-04-05",
       materialType: "Tana",
-      purchaseFromId: "PRT-ID-001",
-      purchaseFromName: "Yogesh Jakhotya Spinners",
-      purchaseToId: "PRT-ID-004",
-      purchaseToName: "Shivaji Khairnar (Own Firm)",
-      deliveryAddress: "Plot No. 45-A, MIDC, Ichalkaranji - 416115",
+      purchaseFromId: "PRT-ID-002",
+      purchaseFromName: "Surat Yarn Mills Pvt Ltd",
+      purchaseToId: "PRT-ID-001",
+      purchaseToName: "Dhandai Textiles (Own Firm)",
+      deliveryAddress: "Plot 18, MIDC Industrial Zone, Ichalkaranji - 416115",
       expectedDeliveryDate: "2026-04-12",
       paymentTerms: "30 Days Credit",
       itemName: "40s Cotton Warp Yarn",
@@ -211,14 +242,14 @@ const buildSeeds = () => {
     },
     {
       id: "TANA-PO-ID-0002",
-      poNumber: "TANA-PO-2026-0002",
+      poNumber: "TANA/PO/2026/04/20/0002",
       poDate: "2026-04-20",
       materialType: "Tana",
-      purchaseFromId: "PRT-ID-002",
-      purchaseFromName: "Om Yarn Traders",
-      purchaseToId: "PRT-ID-004",
-      purchaseToName: "Shivaji Khairnar (Own Firm)",
-      deliveryAddress: "Plot No. 45-A, MIDC, Ichalkaranji - 416115",
+      purchaseFromId: "PRT-ID-003",
+      purchaseFromName: "Ichalkaranji Cotton Suppliers",
+      purchaseToId: "PRT-ID-001",
+      purchaseToName: "Dhandai Textiles (Own Firm)",
+      deliveryAddress: "Plot 18, MIDC Industrial Zone, Ichalkaranji - 416115",
       expectedDeliveryDate: "2026-04-28",
       paymentTerms: "30 Days Credit",
       itemName: "60s Combed Warp Yarn",
@@ -237,35 +268,6 @@ const buildSeeds = () => {
       amountInWords: "Rupees Five Lakh Twenty Thousand Eight Hundred Only",
       bagsReceivedSoFar: 20,
       status: "Partially Received"
-    },
-    {
-      id: "TANA-PO-ID-0003",
-      poNumber: "TANA-PO-2026-0003",
-      poDate: "2026-05-10",
-      materialType: "Tana",
-      purchaseFromId: "PRT-ID-001",
-      purchaseFromName: "Yogesh Jakhotya Spinners",
-      purchaseToId: "PRT-ID-004",
-      purchaseToName: "Shivaji Khairnar (Own Firm)",
-      deliveryAddress: "Plot No. 45-A, MIDC, Ichalkaranji - 416115",
-      expectedDeliveryDate: "2026-05-18",
-      paymentTerms: "45 Days Credit",
-      itemName: "40s Cotton Warp Yarn",
-      hsnCode: "5402",
-      totalBagsOrdered: 40,
-      perBagWeightKg: 50,
-      totalWeightKg: 2000,
-      ratePerKg: 248,
-      grossAmount: 496000,
-      cgstPercent: 6,
-      sgstPercent: 6,
-      cgstAmount: 29760,
-      sgstAmount: 29760,
-      totalTaxAmount: 59520,
-      netPayable: 555520,
-      amountInWords: "Rupees Five Lakh Fifty Five Thousand Five Hundred Twenty Only",
-      bagsReceivedSoFar: 0,
-      status: "Open"
     }
   ];
 
@@ -275,8 +277,8 @@ const buildSeeds = () => {
       grnNumber: "TANA-GRN-2026-0001",
       grnDate: "2026-04-10",
       linkedPOId: "TANA-PO-ID-0001",
-      linkedPONumber: "TANA-PO-2026-0001",
-      supplierName: "Yogesh Jakhotya Spinners",
+      linkedPONumber: "TANA/PO/2026/04/05/0001",
+      supplierName: "Surat Yarn Mills Pvt Ltd",
       vehicleNo: "MH-09-AB-1234",
       lrNo: "LR-20260410",
       bagsOrdered: 50,
@@ -286,26 +288,8 @@ const buildSeeds = () => {
       perBagWeightKg: 50,
       totalWeightReceived: 2500,
       conditionCheck: "Good",
-      receivedBy: "Mahadev Koli",
+      receivedBy: "Bhushan",
       status: "Completed"
-    },
-    {
-      id: "TANA-GRN-ID-0002",
-      grnNumber: "TANA-GRN-2026-0002",
-      grnDate: "2026-04-25",
-      linkedPOId: "TANA-PO-ID-0002",
-      linkedPONumber: "TANA-PO-2026-0002",
-      supplierName: "Om Yarn Traders",
-      vehicleNo: "MH-09-CD-5678",
-      bagsOrdered: 30,
-      bagsPreviouslyReceived: 0,
-      bagsPending: 30,
-      bagsReceivedThisGRN: 20,
-      perBagWeightKg: 50,
-      totalWeightReceived: 1000,
-      conditionCheck: "Good",
-      receivedBy: "Ganesh Mane",
-      status: "Partial"
     }
   ];
 
@@ -317,10 +301,10 @@ const buildSeeds = () => {
       linkedGRNId: "TANA-GRN-ID-0001",
       linkedGRNNumber: "TANA-GRN-2026-0001",
       linkedPOId: "TANA-PO-ID-0001",
-      linkedPONumber: "TANA-PO-2026-0001",
-      supplierInvoiceNo: "YJS/2026/0042",
+      linkedPONumber: "TANA/PO/2026/04/05/0001",
+      supplierInvoiceNo: "SYM/2026/0042",
       supplierInvoiceDate: "2026-04-10",
-      supplierName: "Yogesh Jakhotya Spinners",
+      supplierName: "Surat Yarn Mills Pvt Ltd",
       itemDescription: "40s Cotton Warp Yarn — 2500 KG (50 Bags)",
       totalWeightKg: 2500,
       ratePerKg: 245,
@@ -407,16 +391,68 @@ export const useTanaStore = create<TanaState>()(
         });
       },
 
-      updateGRN: (grn) =>
-        set((state) => ({
-          grns: state.grns.map((x) => (x.id === grn.id ? grn : x))
-        })),
+      updateGRN: (grn) => {
+        set((state) => {
+          const oldGrn = state.grns.find(g => g.id === grn.id);
+          if (!oldGrn) return {};
+          
+          const bagDiff = grn.bagsReceivedThisGRN - oldGrn.bagsReceivedThisGRN;
+          const weightDiff = grn.totalWeightReceived - oldGrn.totalWeightReceived;
+
+          const updatedPOs = state.purchaseOrders.map((po) => {
+            if (po.id === grn.linkedPOId) {
+              const newTotal = Math.max(0, po.bagsReceivedSoFar + bagDiff);
+              const newStatus: TanaPO["status"] =
+                newTotal >= po.totalBagsOrdered ? "Closed" :
+                newTotal > 0 ? "Partially Received" : "Open";
+              return { ...po, bagsReceivedSoFar: newTotal, status: newStatus };
+            }
+            return po;
+          });
+
+          return {
+            grns: state.grns.map((x) => (x.id === grn.id ? grn : x)),
+            purchaseOrders: updatedPOs,
+            rawStockBags: Math.max(0, state.rawStockBags + bagDiff),
+            rawStockWeightKg: Math.max(0, state.rawStockWeightKg + weightDiff)
+          };
+        });
+      },
+
+      deleteGRN: (id) => {
+        set((state) => {
+          const grn = state.grns.find((g) => g.id === id);
+          if (!grn) return {};
+
+          const updatedPOs = state.purchaseOrders.map((po) => {
+            if (po.id === grn.linkedPOId) {
+              const newTotal = Math.max(0, po.bagsReceivedSoFar - grn.bagsReceivedThisGRN);
+              const newStatus: TanaPO["status"] =
+                newTotal >= po.totalBagsOrdered ? "Closed" :
+                newTotal > 0 ? "Partially Received" : "Open";
+              return { ...po, bagsReceivedSoFar: newTotal, status: newStatus };
+            }
+            return po;
+          });
+
+          return {
+            grns: state.grns.filter((g) => g.id !== id),
+            purchaseOrders: updatedPOs,
+            rawStockBags: Math.max(0, state.rawStockBags - grn.bagsReceivedThisGRN),
+            rawStockWeightKg: Math.max(0, state.rawStockWeightKg - grn.totalWeightReceived)
+          };
+        });
+      },
 
       // PI CRUD
       createPI: (pi) => set((state) => ({ invoices: [pi, ...state.invoices] })),
       updatePI: (pi) =>
         set((state) => ({
           invoices: state.invoices.map((x) => (x.id === pi.id ? pi : x))
+        })),
+      deletePI: (id) =>
+        set((state) => ({
+          invoices: state.invoices.filter((x) => x.id !== id)
         })),
 
       // Stock

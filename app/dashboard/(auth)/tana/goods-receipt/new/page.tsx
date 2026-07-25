@@ -125,7 +125,7 @@ export default function NewTanaGRNPage() {
                 <Select onValueChange={(v) => form.setValue("linkedPOId", v)} value={form.watch("linkedPOId")}>
                   <SelectTrigger><SelectValue placeholder="Select Open / Partial PO" /></SelectTrigger>
                   <SelectContent>
-                    {openPOs.length === 0 && <SelectItem value="" disabled>No open POs available</SelectItem>}
+                    {openPOs.length === 0 && <SelectItem value="none" disabled>No open POs available</SelectItem>}
                     {openPOs.map(po => (
                       <SelectItem key={po.id} value={po.id}>
                         {po.poNumber} — {po.purchaseFromName} ({po.totalBagsOrdered - po.bagsReceivedSoFar} bags pending)

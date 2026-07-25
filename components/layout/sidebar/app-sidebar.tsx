@@ -32,10 +32,13 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
+import { useLanguage } from "@/lib/i18n/language-context";
+
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname();
   const { setOpen, setOpenMobile, isMobile } = useSidebar();
   const isTablet = useIsTablet();
+  const { t } = useLanguage();
 
   useEffect(() => {
     if (isMobile) setOpenMobile(false);
@@ -54,7 +57,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               <DropdownMenuTrigger asChild>
                 <SidebarMenuButton className="hover:text-foreground h-10 group-data-[collapsible=icon]:px-0! hover:bg-[var(--primary)]/5">
                   <Logo />
-                  <span className="text-foreground font-semibold">DKS Textile ERP</span>
+                  <span className="text-foreground font-semibold">{t("appName", "DKS Textile ERP")}</span>
                   <ChevronsUpDown className="ml-auto group-data-[collapsible=icon]:hidden" />
                 </SidebarMenuButton>
               </DropdownMenuTrigger>
@@ -63,7 +66,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 side={isMobile ? "bottom" : "right"}
                 align="end"
                 sideOffset={4}>
-                <DropdownMenuLabel>DKS Weaving Units</DropdownMenuLabel>
+                <DropdownMenuLabel>{t("unitsListTitle", "DKS Weaving Units")}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem className="flex items-center gap-3">
                   <div className="flex size-8 items-center justify-center rounded-md border">
@@ -71,7 +74,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   </div>
                   <div className="flex flex-col">
                     <span className="text-sm font-medium">Ichalkaranji Unit-I</span>
-                    <span className="text-xs text-green-700 font-bold">Operational (24x7)</span>
+                    <span className="text-xs text-green-700 font-bold">{t("unitStatusOperational", "Operational (24x7)")}</span>
                   </div>
                 </DropdownMenuItem>
                 <DropdownMenuItem className="flex items-center gap-3 opacity-60">
@@ -80,7 +83,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   </div>
                   <div className="flex flex-col">
                     <span className="text-sm font-medium">Kolhapur Sizing-II</span>
-                    <span className="text-xs text-muted-foreground">Planning Phase</span>
+                    <span className="text-xs text-muted-foreground">{t("unitStatusPlanning", "Planning Phase")}</span>
                   </div>
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -94,20 +97,20 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </ScrollArea>
       </SidebarContent>
       <SidebarFooter>
-        <Card className="gap-4 overflow-hidden py-3 group-data-[collapsible=icon]:hidden border-emerald-500/10 bg-emerald-500/[0.02]">
+        {/* <Card className="gap-4 overflow-hidden py-3 group-data-[collapsible=icon]:hidden border-emerald-500/10 bg-emerald-500/[0.02]">
           <CardHeader className="px-3 pb-2 pt-1">
             <CardTitle className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-600 flex items-center gap-1.5">
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
               </span>
-              Mill Live Feed
+              {t("millLiveFeedTitle", "Mill Live Feed")}
             </CardTitle>
             <CardDescription className="text-[11px] leading-relaxed text-muted-foreground mt-1">
-              Ichalkaranji Unit-I running. Active Weavers in shift: 18. Speed: 680 RPM.
+              {t("millLiveFeedDesc", "Ichalkaranji Unit-I running. Active Weavers in shift: 18. Speed: 680 RPM.")}
             </CardDescription>
           </CardHeader>
-        </Card>
+        </Card> */}
         <NavUser />
       </SidebarFooter>
     </Sidebar>

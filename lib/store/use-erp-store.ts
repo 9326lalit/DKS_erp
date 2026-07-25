@@ -79,18 +79,18 @@ interface ERPState {
 }
 
 const DEFAULT_BUSINESS: BusinessDetails = {
-  businessName: "Khairnar Textile Industries",
-  ownerName: "Lalit Khairnar",
-  gstNumber: "27AABCU1234F1Z5",
-  panNumber: "AABCU1234F",
+  businessName: "Dhandai Textiles",
+  ownerName: "Bhushan",
+  gstNumber: "27AAIPK1234F1Z5",
+  panNumber: "AAIPK1234F",
   businessType: "Proprietorship",
   industry: "Textile Manufacturing",
-  phone: "+91 98765 43210",
-  alternativePhone: "+91 98765 43211",
-  email: "contact@khairnartextile.com",
-  website: "www.khairnartextile.com",
-  addressLine1: "Plot No. 45-48, MIDC Industrial Area",
-  addressLine2: "Near Power House",
+  phone: "+91 98230 11223",
+  alternativePhone: "+91 98765 43210",
+  email: "bhushan@dhandaitextiles.com",
+  website: "www.dhandaitextiles.com",
+  addressLine1: "Plot No. 18, MIDC Industrial Zone",
+  addressLine2: "Textile Park",
   city: "Ichalkaranji",
   district: "Kolhapur",
   state: "Maharashtra",
@@ -99,14 +99,14 @@ const DEFAULT_BUSINESS: BusinessDetails = {
   currency: "INR",
   timezone: "Asia/Kolkata",
   logoUrl: "",
-  businessDescription: "State-of-the-art weaving mill specializing in 100% cotton grey fabric manufacturing with high efficiency airjet and rapier looms operating 24x7."
+  businessDescription: "Dhandai Textiles — High-efficiency powerloom weaving mill specializing in 100% cotton warp and weft fabric manufacturing operating 24x7."
 };
 
 const DEFAULT_FACTORY: FactoryDetails = {
-  factoryName: "Ichalkaranji Weaving Unit-I",
-  factoryCode: "IWU-01",
+  factoryName: "Dhandai Textiles (Main Shed)",
+  factoryCode: "DT-01",
   factoryType: "Powerloom Shed",
-  factoryAddress: "Plot No. 45-48, MIDC Industrial Area, Ichalkaranji",
+  factoryAddress: "Plot No. 18, MIDC Industrial Zone, Ichalkaranji",
   city: "Ichalkaranji",
   district: "Kolhapur",
   state: "Maharashtra",
@@ -114,17 +114,17 @@ const DEFAULT_FACTORY: FactoryDetails = {
   pincode: "416115",
   latitude: "16.6978",
   longitude: "74.4649",
-  factoryManager: "Sanjay Patil",
+  factoryManager: "Bhushan",
   phone: "+91 98230 11223",
-  email: "sanjay.patil@khairnartextile.com",
+  email: "bhushan@dhandaitextiles.com",
   factoryImageUrl: "",
   workingHours: "24 Hours (Continuous Run)",
   shiftSystem: "2-Shift System (12 Hours each)",
-  morningShiftStart: "07:30 AM",
-  morningShiftEnd: "07:30 PM",
-  nightShiftStart: "07:30 PM",
-  nightShiftEnd: "07:30 AM",
-  totalLooms: 36,
+  morningShiftStart: "08:00 AM",
+  morningShiftEnd: "08:00 PM",
+  nightShiftStart: "08:00 PM",
+  nightShiftEnd: "08:00 AM",
+  totalLooms: 24,
   factoryStatus: "Active"
 };
 

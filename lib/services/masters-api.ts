@@ -1,6 +1,6 @@
 // Masters API Service — Phase 1 Textile ERP
 
-import { useMastersStore, Factory, Loom, Fabric, Party, Labour, Employee, ExpenseCategory, Yarn, Shift, Warehouse, Unit } from "@/lib/store/use-masters-store";
+import { useMastersStore, Factory, Loom, Fabric, Party, Labour, Employee, ExpenseCategory, Yarn, Shift, Warehouse, Unit, SizingMill } from "@/lib/store/use-masters-store";
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -224,5 +224,25 @@ export const mastersApiService = {
   async deleteUnit(id: string): Promise<void> {
     await delay(200);
     useMastersStore.getState().deleteUnit(id);
+  },
+
+  // ---------- SIZING MILLS ----------
+  async getSizingMills(): Promise<SizingMill[]> {
+    await delay(200);
+    return useMastersStore.getState().sizingMills;
+  },
+  async createSizingMill(mill: SizingMill): Promise<SizingMill> {
+    await delay(300);
+    useMastersStore.getState().createSizingMill(mill);
+    return mill;
+  },
+  async updateSizingMill(mill: SizingMill): Promise<SizingMill> {
+    await delay(300);
+    useMastersStore.getState().updateSizingMill(mill);
+    return mill;
+  },
+  async deleteSizingMill(id: string): Promise<void> {
+    await delay(200);
+    useMastersStore.getState().deleteSizingMill(id);
   }
 };

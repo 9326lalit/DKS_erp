@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { numberToWords } from "./use-tana-store";
+import { numberToWords, POItem } from "./use-tana-store";
 
 // ----------------------------------------------------
 // BANA INTERFACES (Weft Yarn)
@@ -33,6 +33,7 @@ export interface BanaPO {
   totalTaxAmount: number;
   netPayable: number;
   amountInWords: string;
+  items?: POItem[];
   bagsReceivedSoFar: number;
   status: "Open" | "Partially Received" | "Closed";
 }
@@ -106,9 +107,11 @@ interface BanaState {
 
   createGRN: (grn: BanaGRN) => void;
   updateGRN: (grn: BanaGRN) => void;
+  deleteGRN: (id: string) => void;
 
   createPI: (pi: BanaPI) => void;
   updatePI: (pi: BanaPI) => void;
+  deletePI: (id: string) => void;
 
   deductStock: (bags: number, weightKg: number) => void;
 
@@ -125,90 +128,32 @@ const buildBanaSeeds = () => {
   const seededPOs: BanaPO[] = [
     {
       id: "BANA-PO-ID-0001",
-      poNumber: "BANA-PO-2026-0001",
+      poNumber: "BANA/PO/2026/04/08/0001",
       poDate: "2026-04-08",
       materialType: "Bana",
-      purchaseFromId: "PRT-ID-003",
-      purchaseFromName: "Shree Ganesh Yarn Depot",
-      purchaseToId: "PRT-ID-004",
-      purchaseToName: "Shivaji Khairnar (Own Firm)",
-      deliveryAddress: "Plot No. 45-A, MIDC, Ichalkaranji - 416115",
+      purchaseFromId: "PRT-ID-004",
+      purchaseFromName: "Reliance Yarn Industries",
+      purchaseToId: "PRT-ID-001",
+      purchaseToName: "Dhandai Textiles (Own Firm)",
+      deliveryAddress: "Plot 18, MIDC Industrial Zone, Ichalkaranji - 416115",
       expectedDeliveryDate: "2026-04-16",
       paymentTerms: "30 Days Credit",
-      itemName: "30s Cotton Weft Yarn",
+      itemName: "2/40s PC Weft Yarn",
       hsnCode: "5205",
       totalBagsOrdered: 40,
       perBagWeightKg: 50,
       totalWeightKg: 2000,
-      ratePerKg: 220,
-      grossAmount: 440000,
+      ratePerKg: 240,
+      grossAmount: 480000,
       cgstPercent: 6,
       sgstPercent: 6,
-      cgstAmount: 26400,
-      sgstAmount: 26400,
-      totalTaxAmount: 52800,
-      netPayable: 492800,
-      amountInWords: "Rupees Four Lakh Ninety Two Thousand Eight Hundred Only",
+      cgstAmount: 28800,
+      sgstAmount: 28800,
+      totalTaxAmount: 57600,
+      netPayable: 537600,
+      amountInWords: "Rupees Five Lakh Thirty Seven Thousand Six Hundred Only",
       bagsReceivedSoFar: 40,
       status: "Closed"
-    },
-    {
-      id: "BANA-PO-ID-0002",
-      poNumber: "BANA-PO-2026-0002",
-      poDate: "2026-05-02",
-      materialType: "Bana",
-      purchaseFromId: "PRT-ID-002",
-      purchaseFromName: "Om Yarn Traders",
-      purchaseToId: "PRT-ID-004",
-      purchaseToName: "Shivaji Khairnar (Own Firm)",
-      deliveryAddress: "Plot No. 45-A, MIDC, Ichalkaranji - 416115",
-      expectedDeliveryDate: "2026-05-10",
-      paymentTerms: "30 Days Credit",
-      itemName: "40s Cotton Weft Yarn",
-      hsnCode: "5205",
-      totalBagsOrdered: 25,
-      perBagWeightKg: 50,
-      totalWeightKg: 1250,
-      ratePerKg: 235,
-      grossAmount: 293750,
-      cgstPercent: 6,
-      sgstPercent: 6,
-      cgstAmount: 17625,
-      sgstAmount: 17625,
-      totalTaxAmount: 35250,
-      netPayable: 329000,
-      amountInWords: "Rupees Three Lakh Twenty Nine Thousand Only",
-      bagsReceivedSoFar: 15,
-      status: "Partially Received"
-    },
-    {
-      id: "BANA-PO-ID-0003",
-      poNumber: "BANA-PO-2026-0003",
-      poDate: "2026-06-01",
-      materialType: "Bana",
-      purchaseFromId: "PRT-ID-003",
-      purchaseFromName: "Shree Ganesh Yarn Depot",
-      purchaseToId: "PRT-ID-004",
-      purchaseToName: "Shivaji Khairnar (Own Firm)",
-      deliveryAddress: "Plot No. 45-A, MIDC, Ichalkaranji - 416115",
-      expectedDeliveryDate: "2026-06-10",
-      paymentTerms: "45 Days Credit",
-      itemName: "20s Cotton Weft Yarn",
-      hsnCode: "5205",
-      totalBagsOrdered: 35,
-      perBagWeightKg: 50,
-      totalWeightKg: 1750,
-      ratePerKg: 200,
-      grossAmount: 350000,
-      cgstPercent: 6,
-      sgstPercent: 6,
-      cgstAmount: 21000,
-      sgstAmount: 21000,
-      totalTaxAmount: 42000,
-      netPayable: 392000,
-      amountInWords: "Rupees Three Lakh Ninety Two Thousand Only",
-      bagsReceivedSoFar: 0,
-      status: "Open"
     }
   ];
 
@@ -218,8 +163,8 @@ const buildBanaSeeds = () => {
       grnNumber: "BANA-GRN-2026-0001",
       grnDate: "2026-04-15",
       linkedPOId: "BANA-PO-ID-0001",
-      linkedPONumber: "BANA-PO-2026-0001",
-      supplierName: "Shree Ganesh Yarn Depot",
+      linkedPONumber: "BANA/PO/2026/04/08/0001",
+      supplierName: "Reliance Yarn Industries",
       vehicleNo: "MH-09-XY-4321",
       bagsOrdered: 40,
       bagsPreviouslyReceived: 0,
@@ -228,26 +173,8 @@ const buildBanaSeeds = () => {
       perBagWeightKg: 50,
       totalWeightReceived: 2000,
       conditionCheck: "Good",
-      receivedBy: "Ganesh Mane",
+      receivedBy: "Bhushan",
       status: "Completed"
-    },
-    {
-      id: "BANA-GRN-ID-0002",
-      grnNumber: "BANA-GRN-2026-0002",
-      grnDate: "2026-05-06",
-      linkedPOId: "BANA-PO-ID-0002",
-      linkedPONumber: "BANA-PO-2026-0002",
-      supplierName: "Om Yarn Traders",
-      vehicleNo: "MH-09-PQ-7890",
-      bagsOrdered: 25,
-      bagsPreviouslyReceived: 0,
-      bagsPending: 25,
-      bagsReceivedThisGRN: 15,
-      perBagWeightKg: 50,
-      totalWeightReceived: 750,
-      conditionCheck: "Good",
-      receivedBy: "Mahadev Koli",
-      status: "Partial"
     }
   ];
 
@@ -331,7 +258,7 @@ export const useBanaStore = create<BanaState>()(
               const newTotal = po.bagsReceivedSoFar + grn.bagsReceivedThisGRN;
               const newStatus: BanaPO["status"] =
                 newTotal >= po.totalBagsOrdered ? "Closed" :
-                newTotal > 0 ? "Partially Received" : "Open";
+                  newTotal > 0 ? "Partially Received" : "Open";
               return { ...po, bagsReceivedSoFar: newTotal, status: newStatus };
             }
             return po;
@@ -345,15 +272,67 @@ export const useBanaStore = create<BanaState>()(
         });
       },
 
-      updateGRN: (grn) =>
-        set((state) => ({
-          grns: state.grns.map((x) => (x.id === grn.id ? grn : x))
-        })),
+      updateGRN: (grn) => {
+        set((state) => {
+          const oldGrn = state.grns.find(g => g.id === grn.id);
+          if (!oldGrn) return {};
+          
+          const bagDiff = grn.bagsReceivedThisGRN - oldGrn.bagsReceivedThisGRN;
+          const weightDiff = grn.totalWeightReceived - oldGrn.totalWeightReceived;
+
+          const updatedPOs = state.purchaseOrders.map((po) => {
+            if (po.id === grn.linkedPOId) {
+              const newTotal = Math.max(0, po.bagsReceivedSoFar + bagDiff);
+              const newStatus: BanaPO["status"] =
+                newTotal >= po.totalBagsOrdered ? "Closed" :
+                newTotal > 0 ? "Partially Received" : "Open";
+              return { ...po, bagsReceivedSoFar: newTotal, status: newStatus };
+            }
+            return po;
+          });
+
+          return {
+            grns: state.grns.map((x) => (x.id === grn.id ? grn : x)),
+            purchaseOrders: updatedPOs,
+            stockBags: Math.max(0, state.stockBags + bagDiff),
+            stockWeightKg: Math.max(0, state.stockWeightKg + weightDiff)
+          };
+        });
+      },
+
+      deleteGRN: (id: string) => {
+        set((state) => {
+          const grn = state.grns.find((g) => g.id === id);
+          if (!grn) return {};
+
+          const updatedPOs = state.purchaseOrders.map((po) => {
+            if (po.id === grn.linkedPOId) {
+              const newTotal = Math.max(0, po.bagsReceivedSoFar - grn.bagsReceivedThisGRN);
+              const newStatus: BanaPO["status"] =
+                newTotal >= po.totalBagsOrdered ? "Closed" :
+                newTotal > 0 ? "Partially Received" : "Open";
+              return { ...po, bagsReceivedSoFar: newTotal, status: newStatus };
+            }
+            return po;
+          });
+
+          return {
+            grns: state.grns.filter((g) => g.id !== id),
+            purchaseOrders: updatedPOs,
+            stockBags: Math.max(0, state.stockBags - grn.bagsReceivedThisGRN),
+            stockWeightKg: Math.max(0, state.stockWeightKg - grn.totalWeightReceived)
+          };
+        });
+      },
 
       createPI: (pi) => set((state) => ({ invoices: [pi, ...state.invoices] })),
       updatePI: (pi) =>
         set((state) => ({
           invoices: state.invoices.map((x) => (x.id === pi.id ? pi : x))
+        })),
+      deletePI: (id: string) =>
+        set((state) => ({
+          invoices: state.invoices.filter((x) => x.id !== id)
         })),
 
       deductStock: (bags, weightKg) =>

@@ -16,6 +16,7 @@ import { PageHeader } from "@/components/textile-erp/page-header";
 import { MasterToolbar } from "@/components/textile-erp/master-toolbar";
 import { MasterTable, TableColumn } from "@/components/textile-erp/master-table";
 import { MasterDialog } from "@/components/textile-erp/master-dialog";
+import { DetailViewCard } from "@/components/textile-erp/detail-view-card";
 import { StatusBadge } from "@/components/textile-erp/status-badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -212,6 +213,7 @@ export default function FactoriesPage() {
   });
 
   const columns: TableColumn<FactoryType>[] = [
+    { key: "createdDate", header: "Created Date", render: (item) => <span className="font-mono text-xs text-muted-foreground">{item.createdDate || item.establishmentDate || "25 Jul 2026"}</span>, sortable: true },
     { key: "factoryId", header: "Factory ID", sortable: true },
     { key: "factoryName", header: "Factory Name", sortable: true },
     { key: "ownerName", header: "Owner Name", sortable: true },
@@ -316,84 +318,45 @@ export default function FactoriesPage() {
         }
       >
         {viewFactory ? (
-          <div className="space-y-5 text-xs">
-            {/* Basic Info */}
-            <div className="grid grid-cols-2 gap-4 border-b border-border/10 pb-4">
-              <div>
-                <span className="text-muted-foreground block font-medium">Factory Name</span>
-                <span className="text-sm font-bold text-foreground">{viewFactory.factoryName}</span>
-              </div>
-              <div>
-                <span className="text-muted-foreground block font-medium">Owner Name</span>
-                <span className="font-semibold text-foreground">{viewFactory.ownerName}</span>
-              </div>
-            </div>
-            {/* Shed Info */}
-            <div className="grid grid-cols-3 gap-4 border-b border-border/10 pb-4">
-              <div>
-                <span className="text-muted-foreground block font-medium">Shed Type</span>
-                <Badge variant="outline" className="font-semibold">{viewFactory.shedType}</Badge>
-              </div>
-              <div>
-                <span className="text-muted-foreground block font-medium">Shed Size</span>
-                <span className="font-semibold">{viewFactory.shedLength} × {viewFactory.shedWidth} ft</span>
-              </div>
-              <div>
-                <span className="text-muted-foreground block font-medium">Total Area</span>
-                <span className="font-bold text-foreground">{viewFactory.totalArea.toLocaleString()} sq ft</span>
-              </div>
-            </div>
-            {/* Address */}
-            <div className="border-b border-border/10 pb-4">
-              <span className="text-muted-foreground block font-medium mb-1">Address</span>
-              <p className="font-semibold text-foreground">
-                Plot No. {viewFactory.plotNo}, {viewFactory.addressLine1}
-                {viewFactory.addressLine2 && `, ${viewFactory.addressLine2}`}
-                <br />
-                {viewFactory.cityVillage}, {viewFactory.taluka}, {viewFactory.district}, {viewFactory.state} — {viewFactory.pincode}
-              </p>
-            </div>
-            {/* GST, Registration, Contact */}
-            <div className="grid grid-cols-2 gap-4 border-b border-border/10 pb-4">
-              <div>
-                <span className="text-muted-foreground block font-medium">GST Number</span>
-                <span className="font-semibold uppercase">{viewFactory.gstNumber || "N/A"}</span>
-              </div>
-              <div>
-                <span className="text-muted-foreground block font-medium">Registration No.</span>
-                <span className="font-semibold">{viewFactory.registrationNo || "N/A"}</span>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4 border-b border-border/10 pb-4">
-              <div>
-                <span className="text-muted-foreground block font-medium">Contact Number</span>
-                <span className="font-semibold">{viewFactory.contactNumber}</span>
-              </div>
-              <div>
-                <span className="text-muted-foreground block font-medium">EB Meter No.</span>
-                <span className="font-semibold">{viewFactory.electricityMeterNo || "N/A"}</span>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <span className="text-muted-foreground block font-medium">Establishment Date</span>
-                <span className="font-semibold">{viewFactory.establishmentDate || "N/A"}</span>
-              </div>
-              <div>
-                <span className="text-muted-foreground block font-medium">Status</span>
-                <StatusBadge status={viewFactory.activeStatus} />
-              </div>
-            </div>
+          <DetailViewCard
+            title={viewFactory.factoryName}
+            subtitle={`Owner: ${viewFactory.ownerName} • Shed Type: ${viewFactory.shedType}`}
+            statusBadge={<StatusBadge status={viewFactory.activeStatus} />}
+            sections={[
+              {
+                title: "Factory Profile & Ownership",
+                fields: [
+                  { label: "Factory Name", value: viewFactory.factoryName, highlight: true },
+                  { label: "Owner Name", value: viewFactory.ownerName, highlight: true },
+                  { label: "Contact Phone", value: viewFactory.contactNumber, mono: true },
+                  { label: "Email Address", value: viewFactory.email || "—" },
+                  { label: "GST Number", value: viewFactory.gstNumber || "N/A", mono: true },
+                  { label: "EB Meter No.", value: viewFactory.electricityMeterNo || "N/A", mono: true }
+                ]
+              },
+              {
+                title: "Shed Dimensions & Premises",
+                fields: [
+                  { label: "Shed Type", value: viewFactory.shedType, badge: true },
+                  { label: "Dimensions (L × W)", value: `${viewFactory.shedLength} × ${viewFactory.shedWidth} ft`, mono: true },
+                  { label: "Total Area", value: `${viewFactory.totalArea.toLocaleString()} sq ft`, highlight: true },
+                  { label: "Full Address", value: `Plot No. ${viewFactory.plotNo}, ${viewFactory.addressLine1}${viewFactory.addressLine2 ? `, ${viewFactory.addressLine2}` : ""}, ${viewFactory.cityVillage}, ${viewFactory.taluka}, ${viewFactory.district}, ${viewFactory.state} — ${viewFactory.pincode}`, colSpan: 3 }
+                ]
+              }
+            ]}
+          >
             {viewFactory.notes && (
-              <div>
-                <span className="text-muted-foreground block font-medium">Remarks</span>
-                <p className="font-medium text-foreground bg-muted/20 p-3 rounded-lg border border-border/10 mt-1">{viewFactory.notes}</p>
+              <div className="p-3 bg-card border border-border/30 rounded-lg">
+                <span className="text-[10px] font-bold text-muted-foreground uppercase block">Remarks</span>
+                <p className="text-xs mt-1 text-foreground">{viewFactory.notes}</p>
               </div>
             )}
             <div className="flex justify-end pt-2">
-              <Button variant="outline" onClick={() => setDialogOpen(false)}>Close</Button>
+              <Button variant="outline" size="sm" onClick={() => setDialogOpen(false)} className="h-8 px-6 cursor-pointer">
+                Close Details
+              </Button>
             </div>
-          </div>
+          </DetailViewCard>
         ) : (
           <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-5">
             {/* Basic Info */}

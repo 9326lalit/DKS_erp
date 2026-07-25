@@ -222,6 +222,7 @@ export default function YarnsPage() {
   });
 
   const columns: TableColumn<Yarn>[] = [
+    { key: "createdDate", header: "Created Date", render: (item) => <span className="font-mono text-xs text-muted-foreground">{item.createdDate || "25 Jul 2026"}</span>, sortable: true },
     { key: "yarnCode", header: "Code", sortable: true },
     { key: "yarnName", header: "Yarn Count", sortable: true },
     { key: "material", header: "Material", sortable: true },
