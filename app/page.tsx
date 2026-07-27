@@ -1,667 +1,638 @@
-﻿import Image from "next/image";
 import Link from "next/link";
 import {
   Activity,
   ArrowRight,
   BarChart3,
-  Briefcase,
   Box,
   Building2,
   CheckCircle2,
+  CheckCircle,
   CircleDollarSign,
   Clipboard,
+  Globe,
   Linkedin,
+  Mail,
+  MapPin,
+  Phone,
   ShieldCheck,
   ShoppingCart,
-  Truck,
+  Star,
   TrendingUp,
   Users,
+  Zap,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
 
-const solutions = [
-  {
-    title: "Procurement",
-    description: "Purchase orders, GRN and vendor management.",
-    icon: ShoppingCart,
-  },
-  {
-    title: "Inventory",
-    description: "Real-time stock across warehouses & batches.",
-    icon: Box,
-  },
-  {
-    title: "Manufacturing",
-    description: "Plan jobs, looms, sizing & production.",
-    icon: Activity,
-  },
-  {
-    title: "Factory management",
-    description: "Shop floor, labour & shift tracking.",
-    icon: Briefcase,
-  },
-  {
-    title: "Finance",
-    description: "Ledgers, payables, receivables, banking.",
-    icon: CircleDollarSign,
-  },
-  {
-    title: "GST",
-    description: "GSTR-ready filings & auto reconciliation.",
-    icon: ShieldCheck,
-  },
-  {
-    title: "Reports",
-    description: "100+ ready reports across modules.",
-    icon: BarChart3,
-  },
-  {
-    title: "Analytics",
-    description: "KPIs, drill-downs and forecasts.",
-    icon: TrendingUp,
-  },
-  {
-    title: "Labour",
-    description: "Attendance, wages & productivity.",
-    icon: Users,
-  },
-  {
-    title: "Purchase & Sales",
-    description: "Quotes, orders, dispatch & invoicing.",
-    icon: ShoppingCart,
-  },
-  {
-    title: "Sales & CRM",
-    description: "Leads, pipelines & customer 360.",
-    icon: Users,
-  },
-  {
-    title: "Dashboards",
-    description: "Role-based views for every team.",
-    icon: BarChart3,
-  },
-];
+import { LandingNavbar } from "@/components/landing-navbar";
+import { HeroSection } from "@/components/hero-section";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DATA
+// ─────────────────────────────────────────────────────────────────────────────
 
 const modules = [
   {
     title: "Procurement",
-    description: ["Purchase orders", "Goods receipt", "Purchase invoice", "Vendor management"],
+    tag: "Supply chain",
+    description:
+      "Digitise your entire buying cycle — from purchase requisition to vendor invoice — with approvals, GRN tracking and landed costs built in.",
+    features: [
+      "Purchase orders & approvals",
+      "Goods receipt notes",
+      "Vendor management",
+      "Purchase invoicing",
+    ],
     icon: ShoppingCart,
+    accent: "#0ea5e9",
+    iconBg: "#eff6ff",
+    tagBg: "#eff6ff",
+    tagColor: "#0369a1",
+    border: "#bae6fd",
   },
   {
     title: "Inventory",
-    description: ["Stock tracking", "Warehouses", "Batch & serial", "Stock transfers"],
+    tag: "Warehousing",
+    description:
+      "Live stock across multiple warehouses. Track by batch, serial number or lot with automatic reorder alerts and movement history.",
+    features: [
+      "Multi-warehouse tracking",
+      "Batch & serial numbers",
+      "Stock transfers",
+      "Reorder automation",
+    ],
     icon: Box,
+    accent: "#10b981",
+    iconBg: "#f0fdf4",
+    tagBg: "#f0fdf4",
+    tagColor: "#047857",
+    border: "#a7f3d0",
   },
   {
     title: "Manufacturing",
-    description: ["Factory ops", "Loom & sizing", "Production planning", "Job work"],
+    tag: "Production",
+    description:
+      "Plan and execute jobs across looms, sizing machines and finishing lines. Track WIP, yarn consumption and output in real time.",
+    features: [
+      "Loom & sizing management",
+      "Job work orders",
+      "Production planning",
+      "WIP & output tracking",
+    ],
     icon: Activity,
+    accent: "#8b5cf6",
+    iconBg: "#f5f3ff",
+    tagBg: "#f5f3ff",
+    tagColor: "#6d28d9",
+    border: "#ddd6fe",
   },
   {
     title: "Finance & GST",
-    description: ["Invoices & ledgers", "GSTR filing", "Reports", "Accounting ready"],
+    tag: "Accounting",
+    description:
+      "Complete double-entry accounting with GST-ready ledgers. Generate GSTR-1, GSTR-3B and auto-reconcile ITC in minutes.",
+    features: [
+      "Invoices & ledgers",
+      "GSTR-1 / GSTR-3B filing",
+      "Payables & receivables",
+      "Bank reconciliation",
+    ],
     icon: CircleDollarSign,
+    accent: "#f59e0b",
+    iconBg: "#fffbeb",
+    tagBg: "#fffbeb",
+    tagColor: "#b45309",
+    border: "#fde68a",
   },
   {
-    title: "CRM",
-    description: ["Customer 360", "Sales pipeline", "Lead tracking", "Quotations"],
-    icon: Users,
+    title: "Sales & CRM",
+    tag: "Revenue",
+    description:
+      "Track every lead, quote, order and dispatch in one pipeline. Know your best customers and never miss a follow-up.",
+    features: [
+      "Sales orders & dispatch",
+      "Customer 360 view",
+      "Lead & pipeline tracking",
+      "Quotation management",
+    ],
+    icon: TrendingUp,
+    accent: "#f43f5e",
+    iconBg: "#fff1f2",
+    tagBg: "#fff1f2",
+    tagColor: "#be123c",
+    border: "#fecdd3",
   },
   {
     title: "Analytics",
-    description: ["Live dashboards", "Charts & KPIs", "Drill-down reports", "Forecasts"],
-    icon: TrendingUp,
+    tag: "Intelligence",
+    description:
+      "Role-based dashboards, 100+ ready reports and KPI drill-downs. Make every decision from live data — not yesterday's spreadsheet.",
+    features: [
+      "Live KPI dashboards",
+      "100+ ready reports",
+      "Drill-down analytics",
+      "Trend forecasting",
+    ],
+    icon: BarChart3,
+    accent: "#6366f1",
+    iconBg: "#eef2ff",
+    tagBg: "#eef2ff",
+    tagColor: "#4338ca",
+    border: "#c7d2fe",
   },
 ];
 
-const highlights = [
-  "Real-time purchase order visibility",
-  "Live inventory and warehouse tracking",
-  "Fast factory and production oversight",
-  "Simple finance and GST-ready reporting",
+const problems = [
+  {
+    icon: Clipboard,
+    title: "Manual data entry",
+    desc: "Hours wasted copying between Excel sheets, emails and WhatsApp.",
+  },
+  {
+    icon: Users,
+    title: "Disconnected teams",
+    desc: "Sales, factory, warehouse and finance all working in separate silos.",
+  },
+  {
+    icon: Box,
+    title: "Inventory blind spots",
+    desc: "Stock-outs, over-ordering and untracked batches costing you money.",
+  },
+  {
+    icon: Activity,
+    title: "Production delays",
+    desc: "No live visibility into looms, jobs, labour or machine output.",
+  },
+  {
+    icon: ShieldCheck,
+    title: "GST headaches",
+    desc: "Manual reconciliation and last-minute filing stress every month.",
+  },
+  {
+    icon: BarChart3,
+    title: "No real-time data",
+    desc: "Decisions driven by gut feel — reports are always a week late.",
+  },
+];
+
+const whyFeatures = [
+  {
+    icon: Zap,
+    title: "Live in 2–6 weeks",
+    desc: "Structured onboarding gets you productive fast. No months-long implementation cycles.",
+    color: "#0ea5e9",
+    bg: "#eff6ff",
+  },
+  {
+    icon: Globe,
+    title: "GST & compliance built in",
+    desc: "Auto-generate GSTR-1, GSTR-3B, e-invoices and e-way bills. No add-ons needed.",
+    color: "#10b981",
+    bg: "#f0fdf4",
+  },
+  {
+    icon: ShieldCheck,
+    title: "Role-based access",
+    desc: "Operators, managers and finance users each see exactly what they need.",
+    color: "#8b5cf6",
+    bg: "#f5f3ff",
+  },
+  {
+    icon: Users,
+    title: "Dedicated human support",
+    desc: "A real team answers your questions, trains your staff and stays with you.",
+    color: "#f59e0b",
+    bg: "#fffbeb",
+  },
+];
+
+const stats = [
+  { value: "95%",  label: "Less manual work",       sub: "vs. spreadsheet operations" },
+  { value: "60%",  label: "Faster operations",       sub: "across procurement & finance" },
+  { value: "70%",  label: "Productivity boost",      sub: "reported by factory operators" },
+  { value: "100+", label: "Businesses live",         sub: "across India" },
+];
+
+const comparison = [
+  { feature: "Implementation time",   old: "6–12 months",       dks: "2–6 weeks" },
+  { feature: "Up-front cost",         old: "₹25L+ in licenses", dks: "Subscription only" },
+  { feature: "Cloud-native",          old: false,                dks: true },
+  { feature: "Mobile access",         old: false,                dks: true },
+  { feature: "Real-time dashboards",  old: false,                dks: true },
+  { feature: "GST compliance",        old: "Paid add-on",        dks: "Built-in" },
+  { feature: "No-code configuration", old: false,                dks: true },
+  { feature: "24×7 support",          old: "Ticket queue",       dks: "Dedicated team" },
 ];
 
 const testimonials = [
   {
-    quote: "DKS ERP replaced 9 different tools we were juggling. Our factory finally runs as one system.",
+    quote:
+      "DKS ERP replaced 9 different tools we were juggling. Our factory finally runs as one unified system.",
     name: "Rohit Mehta",
-    role: "CEO, Northwind Textiles",
+    role: "CEO",
+    company: "Northwind Textiles",
     initials: "RM",
+    gradient: "linear-gradient(135deg,#0ea5e9,#2563eb)",
   },
   {
-    quote: "GST filings used to take a week. Now it's a 30-minute review. The team got their evenings back.",
+    quote:
+      "GST filings used to take a full week. Now it's a 30-minute review. The team got their evenings back.",
     name: "Priya Shah",
-    role: "Finance Manager, Fabrique Mills",
+    role: "Finance Manager",
+    company: "Fabrique Mills",
     initials: "PS",
+    gradient: "linear-gradient(135deg,#8b5cf6,#6d28d9)",
   },
   {
-    quote: "Real-time loom and sizing data changed how we plan production. Output is up 22% in 4 months.",
+    quote:
+      "Real-time loom and sizing data changed how we plan production. Output is up 22% in 4 months.",
     name: "Arun Iyer",
-    role: "Operations Manager, Lumen & Co",
+    role: "Operations Manager",
+    company: "Lumen & Co",
     initials: "AI",
+    gradient: "linear-gradient(135deg,#10b981,#0f766e)",
   },
   {
-    quote: "We onboarded 3 plants in 6 weeks. Implementation team was world-class.",
+    quote:
+      "We onboarded 3 plants in 6 weeks. The implementation team was responsive, thorough and brilliant.",
     name: "Vikram Singh",
-    role: "Factory Owner, Axle Works",
+    role: "Factory Owner",
+    company: "Axle Works",
     initials: "VS",
+    gradient: "linear-gradient(135deg,#f59e0b,#d97706)",
   },
 ];
 
+const timeline = [
+  { year: "2019", title: "Founded DKS ERP",     desc: "Started with a vision to modernise Indian textile manufacturing." },
+  { year: "2021", title: "First factory live",   desc: "Deployed at our first textile unit in Surat — procurement & inventory." },
+  { year: "2023", title: "Full module suite",    desc: "Launched manufacturing, GST, CRM and analytics covering end-to-end ops." },
+  { year: "2025", title: "100+ businesses live", desc: "Trusted by manufacturers and factories across India." },
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SECTION LABEL COMPONENT
+// ─────────────────────────────────────────────────────────────────────────────
+function SectionLabel({ children, color = "#0ea5e9", bg = "#eff6ff" }: { children: React.ReactNode; color?: string; bg?: string }) {
+  return (
+    <span
+      className="mb-5 inline-flex items-center rounded-full px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em]"
+      style={{ backgroundColor: bg, color }}
+    >
+      {children}
+    </span>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PAGE
+// ─────────────────────────────────────────────────────────────────────────────
+
 export default function HomePage() {
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top_right,rgba(56,189,248,0.16),transparent_25%),linear-gradient(180deg,#f8fbff_0%,#f8fafc_100%)] text-slate-900">
-      <header className="border-b border-slate-200/80 bg-white/95 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5 sm:px-8 lg:px-12">
-          <Link href="/" className="text-lg font-semibold tracking-tight text-slate-900">
-            DKS ERP
-          </Link>
-          <nav className="hidden items-center gap-8 md:flex">
-            <Link href="#about" className="text-sm font-medium text-slate-600 transition hover:text-slate-900">
-              About
-            </Link>
-            <Link href="#solutions" className="text-sm font-medium text-slate-600 transition hover:text-slate-900">
-              Solutions
-            </Link>
-            <Link href="#why-us" className="text-sm font-medium text-slate-600 transition hover:text-slate-900">
-              Why us
-            </Link>
-            <Link href="#contact" className="text-sm font-medium text-slate-600 transition hover:text-slate-900">
-              Contact
-            </Link>
-          </nav>
-          <Link href="/dashboard/login/v2" className="rounded-full border border-slate-300 bg-slate-100 px-5 py-2.5 text-sm font-semibold text-slate-900 transition hover:bg-slate-200">
-            Login
-          </Link>
-        </div>
-      </header>
+    <main className="min-h-screen bg-white text-slate-900 antialiased">
+      <LandingNavbar />
+      <HeroSection />
 
-      <section id="hero" className="mx-auto w-full max-w-7xl px-6 py-16 sm:px-8 lg:px-12 lg:py-24">
-        <div className="grid gap-10 lg:grid-cols-[1fr_0.95fr] lg:items-center">
-          <div className="space-y-6">
-            <Badge className="inline-flex rounded-full border border-slate-200 bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700">
-              Modern ERP Platform for Manufacturing
-            </Badge>
-            <div className="space-y-5">
-              <h1 className="max-w-3xl text-5xl font-semibold tracking-tight text-slate-900 sm:text-6xl">
-                Run your entire business from
-                <span className="block text-sky-600">one powerful ERP platform.</span>
-              </h1>
-              <p className="max-w-2xl text-lg leading-8 text-slate-600 sm:text-xl">
-                Simplify procurement, inventory, factory operations, finance, and production with one centralized cloud-based ERP built for modern textile and manufacturing businesses.
+      {/* ══════════════════════════════════════════════════════════════════════
+          LOGOS / SOCIAL PROOF BAR
+      ══════════════════════════════════════════════════════════════════════ */}
+      <div className="border-y border-slate-100 bg-slate-50/60 py-4">
+        <div className="mx-auto max-w-7xl px-6 sm:px-8 lg:px-12">
+          <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-between">
+            <p className="shrink-0 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">
+              Trusted by manufacturers across India
+            </p>
+            <div className="flex flex-wrap items-center justify-center gap-6 sm:justify-end">
+              {["Northwind Textiles", "Fabrique Mills", "Lumen & Co", "Axle Works", "Sunrise Looms"].map((n) => (
+                <span key={n} className="text-sm font-semibold text-slate-400 transition hover:text-slate-600">
+                  {n}
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ══════════════════════════════════════════════════════════════════════
+          PROBLEM
+      ══════════════════════════════════════════════════════════════════════ */}
+      <section id="problem" className="py-24">
+        <div className="mx-auto max-w-7xl px-6 sm:px-8 lg:px-12">
+          <div className="mx-auto max-w-2xl text-center">
+            <SectionLabel color="#e11d48" bg="#fff1f2">The Problem</SectionLabel>
+            <h2 className="text-4xl font-extrabold tracking-tight text-slate-900 sm:text-5xl">
+              Still running your factory on{" "}
+              <span className="text-rose-500">spreadsheets?</span>
+            </h2>
+            <p className="mt-5 text-lg leading-8 text-slate-500">
+              Disconnected tools and manual processes cost growing manufacturers crores in productivity every year.
+            </p>
+          </div>
+
+          <div className="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {problems.map((p) => {
+              const Icon = p.icon;
+              return (
+                <div
+                  key={p.title}
+                  className="group relative flex gap-4 overflow-hidden rounded-2xl border border-slate-100 bg-white p-6 shadow-sm transition-all hover:-translate-y-0.5 hover:border-rose-100 hover:shadow-md"
+                >
+                  <div className="shrink-0">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-rose-50 text-rose-500">
+                      <Icon className="h-4.5 w-4.5" />
+                    </div>
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-slate-900">{p.title}</h3>
+                    <p className="mt-1.5 text-sm leading-6 text-slate-500">{p.desc}</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* transition bridge */}
+          <div className="mt-14 flex items-center justify-center gap-3">
+            <div className="h-px flex-1 bg-slate-100 max-w-[160px]" />
+            <p className="text-sm font-bold text-slate-400">There's a better way</p>
+            <div className="h-px flex-1 bg-slate-100 max-w-[160px]" />
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════════════════════════════════
+          MODULES
+      ══════════════════════════════════════════════════════════════════════ */}
+      <section id="solutions" className="bg-slate-50/60 py-24">
+        <div className="mx-auto max-w-7xl px-6 sm:px-8 lg:px-12">
+          <div className="mx-auto max-w-2xl text-center">
+            <SectionLabel>Product Modules</SectionLabel>
+            <h2 className="text-4xl font-extrabold tracking-tight text-slate-900 sm:text-5xl">
+              Powerful modules.{" "}
+              <span className="text-sky-600">Built to work together.</span>
+            </h2>
+            <p className="mt-5 text-lg leading-8 text-slate-500">
+              Six deeply integrated modules covering your entire operation — from supplier to customer, procurement to profit.
+            </p>
+          </div>
+
+          <div className="mt-14 grid gap-5 lg:grid-cols-3">
+            {modules.map((m) => {
+              const Icon = m.icon;
+              return (
+                <div
+                  key={m.title}
+                  className="group flex flex-col overflow-hidden rounded-2xl border bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
+                  style={{ borderColor: m.border }}
+                >
+                  {/* top accent line */}
+                  <div className="h-[3px]" style={{ background: m.accent }} />
+
+                  <div className="flex flex-1 flex-col p-7">
+                    {/* header row */}
+                    <div className="flex items-center justify-between">
+                      <div
+                        className="flex h-11 w-11 items-center justify-center rounded-xl"
+                        style={{ backgroundColor: m.iconBg, color: m.accent }}
+                      >
+                        <Icon className="h-5 w-5" />
+                      </div>
+                      <span
+                        className="rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-wide"
+                        style={{ backgroundColor: m.tagBg, color: m.tagColor }}
+                      >
+                        {m.tag}
+                      </span>
+                    </div>
+
+                    <h3 className="mt-5 text-xl font-bold text-slate-900">{m.title}</h3>
+                    <p className="mt-2.5 text-sm leading-7 text-slate-500">{m.description}</p>
+
+                    <ul className="mt-5 flex-1 space-y-2.5">
+                      {m.features.map((f) => (
+                        <li key={f} className="flex items-center gap-2.5 text-sm text-slate-700">
+                          <CheckCircle2 className="h-4 w-4 shrink-0" style={{ color: m.accent }} />
+                          {f}
+                        </li>
+                      ))}
+                    </ul>
+
+                    <Link
+                      href="#contact"
+                      className="mt-7 inline-flex items-center gap-1.5 text-sm font-bold transition-all group-hover:gap-2.5"
+                      style={{ color: m.accent }}
+                    >
+                      Learn more <ArrowRight className="h-3.5 w-3.5" />
+                    </Link>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="mt-10 flex justify-center">
+            <Link
+              href="/dashboard/login/v2"
+              className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-6 py-3 text-sm font-bold text-slate-700 shadow-sm transition hover:bg-slate-50"
+            >
+              Explore all modules <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════════════════════════════════
+          WHY DKS
+      ══════════════════════════════════════════════════════════════════════ */}
+      <section id="why-us" className="py-24">
+        <div className="mx-auto max-w-7xl px-6 sm:px-8 lg:px-12">
+          <div className="grid gap-16 lg:grid-cols-2 lg:items-center">
+            {/* left */}
+            <div>
+              <SectionLabel color="#6d28d9" bg="#f5f3ff">Why choose DKS</SectionLabel>
+              <h2 className="text-4xl font-extrabold tracking-tight text-slate-900 sm:text-5xl">
+                Built for the way{" "}
+                <span className="text-sky-600">Indian factories</span> work.
+              </h2>
+              <p className="mt-5 text-lg leading-8 text-slate-500">
+                Not adapted from a foreign ERP. Built ground-up for Indian manufacturing — with GST, multi-plant ops and regional workflows at its core.
               </p>
-            </div>
-            <div className="flex flex-col gap-3 sm:flex-row">
-              <Link href="/dashboard/login/v2">
-                <Button className="inline-flex items-center gap-2 rounded-full bg-sky-600 px-6 py-3.5 text-white shadow-lg shadow-sky-200/40 transition hover:bg-sky-700">
-                  Book Free Demo
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
-              </Link>
-              <Link href="#contact" className="inline-flex items-center justify-center rounded-full border border-slate-300 bg-white px-6 py-3.5 text-sm font-semibold text-slate-900 transition hover:bg-slate-100">
-                Watch Demo
-              </Link>
-            </div>
-            <div className="flex flex-wrap gap-3 text-sm text-slate-700">
-              <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 shadow-sm">
-                <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
-                14-day free trial
-              </div>
-              <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 shadow-sm">
-                <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
-                No credit card
-              </div>
-              <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 shadow-sm">
-                <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
-                GST ready
-              </div>
-            </div>
-          </div>
 
-          <div className="relative overflow-hidden rounded-[2.5rem] border border-slate-200 bg-white p-8 shadow-[0_45px_120px_-65px_rgba(15,23,42,0.18)]">
-            <div className="absolute right-6 top-6 rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-md">
-              Production +18% this week
-            </div>
-            <div className="absolute left-6 top-6 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-700 shadow-sm">
-              <span className="inline-flex h-2.5 w-2.5 items-center justify-center rounded-full bg-emerald-500" />
-              Stock alert: Cotton Yarn low
-            </div>
-            <div className="rounded-[2rem] border border-slate-200 bg-slate-50 p-6 shadow-sm">
-              <div className="mb-6 flex items-center justify-between rounded-3xl bg-white px-5 py-4 shadow-sm">
-                <div className="text-sm text-slate-500">app.axiomerp.com / dashboard</div>
-                <div className="flex items-center gap-2 text-xs text-slate-500">
-                  <span className="inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500" />
-                  Live
-                </div>
-              </div>
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="rounded-3xl bg-white p-5 shadow-sm">
-                  <p className="text-sm text-slate-500">Revenue</p>
-                  <p className="mt-3 text-3xl font-semibold text-slate-900">₹48.2L</p>
-                  <p className="mt-2 text-sm text-emerald-600">+12.4%</p>
-                </div>
-                <div className="rounded-3xl bg-white p-5 shadow-sm">
-                  <p className="text-sm text-slate-500">Orders</p>
-                  <p className="mt-3 text-3xl font-semibold text-slate-900">1,284</p>
-                  <p className="mt-2 text-sm text-sky-600">+8.1%</p>
-                </div>
-              </div>
-              <div className="mt-5 rounded-3xl border border-slate-200 bg-slate-100 p-5">
-                <div className="flex items-center justify-between text-sm text-slate-500">
-                  <span>Revenue trend</span>
-                  <span className="rounded-full bg-emerald-100 px-3 py-1 text-emerald-700">Paid</span>
-                </div>
-                <div className="mt-4 h-24 rounded-[1.5rem] bg-white" />
+              <div className="mt-10 space-y-5">
+                {whyFeatures.map((f) => {
+                  const Icon = f.icon;
+                  return (
+                    <div key={f.title} className="flex gap-4 rounded-xl border border-slate-100 bg-slate-50 p-5 transition hover:border-slate-200">
+                      <div
+                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
+                        style={{ backgroundColor: f.bg, color: f.color }}
+                      >
+                        <Icon className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <p className="font-bold text-slate-900">{f.title}</p>
+                        <p className="mt-1 text-sm leading-6 text-slate-500">{f.desc}</p>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
-          </div>
-        </div>
-      </section>
 
-      <section id="problem" className="bg-[#f8fbff] py-16">
-        <div className="mx-auto max-w-7xl px-6 sm:px-8 lg:px-12">
-          <div className="max-w-3xl">
-            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-sky-700">The problem</p>
-            <h2 className="mt-3 text-4xl font-semibold tracking-tight text-slate-900 sm:text-5xl">
-              Still managing your business through Excel?
-            </h2>
-            <p className="mt-4 max-w-2xl text-lg leading-8 text-slate-600">
-              Spreadsheets and disconnected tools cost growing manufacturers crores in lost productivity every year. Sound familiar?
-            </p>
-          </div>
-
-          <div className="mt-10 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
-            <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-              <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-50 text-rose-600">
-                <Users className="h-6 w-6" />
-              </div>
-              <p className="text-lg font-semibold text-slate-900">Disconnected teams</p>
-              <p className="mt-2 text-sm leading-6 text-slate-600">Sales, finance, factory and warehouse working in silos.</p>
-            </div>
-            <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-              <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-50 text-rose-600">
-                <Clipboard className="h-6 w-6" />
-              </div>
-              <p className="text-lg font-semibold text-slate-900">Manual entries</p>
-              <p className="mt-2 text-sm leading-6 text-slate-600">Hours lost copying data between Excel sheets and tools.</p>
-            </div>
-            <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-              <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-50 text-rose-600">
-                <Box className="h-6 w-6" />
-              </div>
-              <p className="text-lg font-semibold text-slate-900">Inventory errors</p>
-              <p className="mt-2 text-sm leading-6 text-slate-600">Stock-outs, over-ordering and untracked batches.</p>
-            </div>
-            <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-              <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-50 text-rose-600">
-                <Activity className="h-6 w-6" />
-              </div>
-              <p className="text-lg font-semibold text-slate-900">Delayed production</p>
-              <p className="mt-2 text-sm leading-6 text-slate-600">No visibility into looms, jobs or labour output.</p>
-            </div>
-            <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-              <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-50 text-rose-600">
-                <ShoppingCart className="h-6 w-6" />
-              </div>
-              <p className="text-lg font-semibold text-slate-900">Lost purchase records</p>
-              <p className="mt-2 text-sm leading-6 text-slate-600">Vendor POs and invoices scattered across inboxes.</p>
-            </div>
-            <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-              <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-50 text-rose-600">
-                <BarChart3 className="h-6 w-6" />
-              </div>
-              <p className="text-lg font-semibold text-slate-900">No real-time visibility</p>
-              <p className="mt-2 text-sm leading-6 text-slate-600">Reports are days late and never match across teams.</p>
-            </div>
-            <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-              <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-50 text-rose-600">
-                <ShieldCheck className="h-6 w-6" />
-              </div>
-              <p className="text-lg font-semibold text-slate-900">GST complexity</p>
-              <p className="mt-2 text-sm leading-6 text-slate-600">Manual reconciliation and filing eat into your week.</p>
-            </div>
-            <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-              <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-50 text-rose-600">
-                <TrendingUp className="h-6 w-6" />
-              </div>
-              <p className="text-lg font-semibold text-slate-900">No analytics</p>
-              <p className="mt-2 text-sm leading-6 text-slate-600">Decisions made on gut feel instead of live numbers.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section id="solution" className="bg-white py-16">
-        <div className="mx-auto max-w-7xl px-6 sm:px-8 lg:px-12">
-          <div className="max-w-3xl">
-            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-sky-700">The solution</p>
-            <h2 className="mt-3 text-4xl font-semibold tracking-tight text-slate-900 sm:text-5xl">
-              Everything your business needs, in one platform.
-            </h2>
-            <p className="mt-4 max-w-2xl text-lg leading-8 text-slate-600">
-              Replace 10+ tools with a single source of truth. Connected workflows from purchase to production to payment.
-            </p>
-          </div>
-
-          <div className="mt-10 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
-            {solutions.map((item) => {
-              const Icon = item.icon;
-              return (
-                <div key={item.title} className="rounded-3xl border border-slate-200 bg-slate-50 p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
-                  <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-sky-700">
-                    <Icon className="h-6 w-6" />
+            {/* right: metrics visual */}
+            <div className="grid grid-cols-2 gap-4">
+              {[
+                { value: "95%",   label: "Less manual work",     sub: "vs spreadsheet operations",   color: "#0ea5e9",  bg: "#eff6ff",  icon: Zap },
+                { value: "60%",   label: "Faster operations",    sub: "procurement to finance",       color: "#10b981",  bg: "#f0fdf4",  icon: TrendingUp },
+                { value: "70%",   label: "Productivity boost",   sub: "reported by factory operators",color: "#8b5cf6",  bg: "#f5f3ff",  icon: Users },
+                { value: "3mo",   label: "Average ROI period",   sub: "from go-live to full return",  color: "#f59e0b",  bg: "#fffbeb",  icon: BarChart3 },
+                { value: "100+",  label: "Businesses live",      sub: "manufacturers across India",   color: "#f43f5e",  bg: "#fff1f2",  icon: Building2 },
+                { value: "2–6w",  label: "Go-live timeline",     sub: "structured onboarding",        color: "#6366f1",  bg: "#eef2ff",  icon: CheckCircle },
+              ].map((m) => {
+                const Icon = m.icon;
+                return (
+                  <div key={m.label} className="flex flex-col gap-4 rounded-2xl border border-slate-100 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-xl" style={{ backgroundColor: m.bg, color: m.color }}>
+                      <Icon className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <p className="text-3xl font-extrabold text-slate-900" style={{ color: m.color }}>{m.value}</p>
+                      <p className="mt-1 font-bold text-slate-800">{m.label}</p>
+                      <p className="mt-0.5 text-xs text-slate-400">{m.sub}</p>
+                    </div>
                   </div>
-                  <p className="text-lg font-semibold text-slate-900">{item.title}</p>
-                  <p className="mt-2 text-sm leading-6 text-slate-600">{item.description}</p>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      <section id="about" className="bg-slate-100 py-20">
-        <div className="mx-auto max-w-7xl px-6 sm:px-8 lg:px-12">
-          <div className="text-center">
-            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-red-500">Key leaders</p>
-            <h2 className="mt-3 text-4xl font-semibold tracking-tight text-slate-900 sm:text-5xl">
-              Our exceptional leaders driving DKS ERP.
-            </h2>
-            <p className="mx-auto mt-4 max-w-2xl text-base leading-7 text-slate-600">
-              Meet the founders who built DKS ERP to simplify textile manufacturing, inventory and finance operations.
-            </p>
-          </div>
-
-          <div className="mt-12 grid gap-6 sm:grid-cols-2">
-            <div className="rounded-[2rem] border border-slate-200 bg-white shadow-sm">
-              <div className="overflow-hidden rounded-t-[2rem] bg-slate-100">
-                <img src="/images/about/Bhushan.jpg" alt="Bhushan Khairnar" className="h-80 w-full object-cover object-top" />
-              </div>
-              <div className="border-t border-slate-200 px-6 py-6 text-center">
-                <p className="text-xl font-semibold text-slate-900">Bhushan Khairnar</p>
-                {/* <p className="mt-2 text-sm text-slate-500">CEO & Founder</p> */}
-                <button className="mt-4 inline-flex items-center justify-center rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-sky-700 transition hover:bg-slate-100">
-                  <Linkedin className="mr-2 h-4 w-4" />
-                  LinkedIn
-                </button>
-              </div>
-            </div>
-
-            <div className="rounded-[2rem] border border-slate-200 bg-white shadow-sm">
-              <div className="overflow-hidden rounded-t-[2rem] bg-slate-100">
-                <img src="/images/about/Lalit.jpg" alt="Lalit Khairnar" className="h-80 w-full object-cover object-top" />
-              </div>
-              <div className="border-t border-slate-200 px-6 py-6 text-center">
-                <p className="text-xl font-semibold text-slate-900">Lalit Khairnar</p>
-                {/* <p className="mt-2 text-sm text-slate-500">COO & Co-Founder</p> */}
-                <button className="mt-4 inline-flex items-center justify-center rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-sky-700 transition hover:bg-slate-100">
-                  <Linkedin className="mr-2 h-4 w-4" />
-                  LinkedIn
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-14 rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <div className="rounded-3xl bg-slate-50 p-5 text-center">
-                <p className="text-sm uppercase tracking-[0.28em] text-slate-500">2019</p>
-                <p className="mt-3 text-xl font-semibold text-slate-900">Started DKS ERP</p>
-              </div>
-              <div className="rounded-3xl bg-slate-50 p-5 text-center">
-                <p className="text-sm uppercase tracking-[0.28em] text-slate-500">2021</p>
-                <p className="mt-3 text-xl font-semibold text-slate-900">First factory live</p>
-              </div>
-              <div className="rounded-3xl bg-slate-50 p-5 text-center">
-                <p className="text-sm uppercase tracking-[0.28em] text-slate-500">2023</p>
-                <p className="mt-3 text-xl font-semibold text-slate-900">Expanded modules</p>
-              </div>
-              <div className="rounded-3xl bg-slate-50 p-5 text-center">
-                <p className="text-sm uppercase tracking-[0.28em] text-slate-500">2025</p>
-                <p className="mt-3 text-xl font-semibold text-slate-900">100+ businesses</p>
-              </div>
+                );
+              })}
             </div>
           </div>
         </div>
       </section>
 
-      <section id="solutions" className="border-b border-slate-200 bg-white/80 py-16">
-        <div className="mx-auto w-full max-w-7xl px-6 sm:px-8 lg:px-12">
-          <div className="mb-10 max-w-3xl">
-            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-sky-700">Product modules</p>
-            <h2 className="mt-3 text-4xl font-semibold tracking-tight text-slate-900 sm:text-5xl">
-              Powerful modules. Built to work together.
-            </h2>
-          </div>
-          <div className="grid gap-6 lg:grid-cols-3">
-            {modules.map((item) => {
-              const Icon = item.icon;
-              return (
-                <div key={item.title} className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm hover:border-slate-300">
-                  <div className="mb-5 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-100 text-sky-700">
-                    <Icon className="h-6 w-6" />
-                  </div>
-                  <p className="text-xl font-semibold text-slate-900">{item.title}</p>
-                  <ul className="mt-4 space-y-3 text-sm leading-6 text-slate-600">
-                    {item.description.map((line) => (
-                      <li key={line} className="flex items-start gap-2">
-                        <span className="mt-1 inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500" />
-                        <span>{line}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  <p className="mt-6 text-sm font-semibold text-sky-700">Explore →</p>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      <section id="why-us" className="bg-slate-50 py-16">
-        <div className="mx-auto grid max-w-7xl gap-10 px-6 sm:px-8 lg:grid-cols-[0.95fr_1.05fr] lg:px-12">
-          <div className="space-y-6">
-            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-slate-500">What we solve</p>
-            <h2 className="text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">
-              Replace scattered tools with one dependable ERP flow.
-            </h2>
-            <p className="text-base leading-8 text-slate-600">
-              From purchase orders to warehouse movement and finance reporting, DKS ERP helps teams stay aligned with less friction and less manual work.
-            </p>
-            <div className="space-y-3">
-              {highlights.map((item) => (
-                <div key={item} className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-                  <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-sky-600" />
-                  <p className="text-sm text-slate-700">{item}</p>
+      {/* ══════════════════════════════════════════════════════════════════════
+          STATS
+      ══════════════════════════════════════════════════════════════════════ */}
+      <section className="py-20">
+        <div
+          className="mx-auto max-w-7xl overflow-hidden rounded-3xl px-6 sm:px-8 lg:px-12"
+          style={{
+            background: "linear-gradient(135deg, #0f172a 0%, #0c4a6e 55%, #0f172a 100%)",
+          }}
+        >
+          <div className="py-16">
+            <div className="mb-14 text-center">
+              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-sky-400">Business results</p>
+              <h2 className="mt-3 text-4xl font-extrabold tracking-tight text-white sm:text-5xl">
+                Real outcomes. Real businesses.
+              </h2>
+            </div>
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+              {stats.map((s) => (
+                <div
+                  key={s.value}
+                  className="rounded-2xl border border-white/10 bg-white/5 p-8 text-center backdrop-blur-sm transition hover:bg-white/10"
+                >
+                  <p className="text-5xl font-extrabold text-white">{s.value}</p>
+                  <p className="mt-3 font-semibold text-sky-200">{s.label}</p>
+                  <p className="mt-1.5 text-xs text-slate-400">{s.sub}</p>
                 </div>
               ))}
             </div>
           </div>
-
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_20px_60px_-32px_rgba(15,23,42,0.25)]">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-sky-100 text-sky-700">
-                  <Truck className="h-5 w-5" />
-                </div>
-                <p className="mt-4 text-lg font-semibold text-slate-900">Procurement</p>
-                <p className="mt-2 text-sm leading-6 text-slate-600">Create purchase orders and follow approvals without switching tools.</p>
-              </div>
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700">
-                  <Briefcase className="h-5 w-5" />
-                </div>
-                <p className="mt-4 text-lg font-semibold text-slate-900">Inventory</p>
-                <p className="mt-2 text-sm leading-6 text-slate-600">Track stock movement, warehouse movement, and party masters in one place.</p>
-              </div>
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-violet-100 text-violet-700">
-                  <BarChart3 className="h-5 w-5" />
-                </div>
-                <p className="mt-4 text-lg font-semibold text-slate-900">Reporting</p>
-                <p className="mt-2 text-sm leading-6 text-slate-600">Monitor performance through clear dashboards and business summaries.</p>
-              </div>
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-100 text-amber-700">
-                  <Users className="h-5 w-5" />
-                </div>
-                <p className="mt-4 text-lg font-semibold text-slate-900">Team access</p>
-                <p className="mt-2 text-sm leading-6 text-slate-600">Give operators, admin, and finance users the right view without clutter.</p>
-              </div>
-            </div>
-          </div>
         </div>
       </section>
 
-      <section className="bg-gradient-to-b from-sky-700 via-sky-700 to-slate-900 py-20 text-white">
-        <div className="mx-auto max-w-7xl px-6 sm:px-8 lg:px-12">
-          <div className="max-w-3xl">
-            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-sky-200">Business results</p>
-            <h2 className="mt-3 text-4xl font-semibold tracking-tight text-white sm:text-5xl">
-              Real outcomes from real customers.
+      {/* ══════════════════════════════════════════════════════════════════════
+          COMPARISON
+      ══════════════════════════════════════════════════════════════════════ */}
+      <section className="py-24">
+        <div className="mx-auto max-w-4xl px-6 sm:px-8 lg:px-12">
+          <div className="mb-14 text-center">
+            <SectionLabel color="#047857" bg="#f0fdf4">Comparison</SectionLabel>
+            <h2 className="text-4xl font-extrabold tracking-tight text-slate-900 sm:text-5xl">
+              DKS ERP vs. Traditional ERP
             </h2>
-          </div>
-
-          <div className="mt-12 grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-            <div className="rounded-3xl border border-white/10 bg-white/10 p-8 shadow-[0_30px_80px_-40px_rgba(0,0,0,0.35)]">
-              <p className="text-4xl font-semibold text-white">95%</p>
-              <p className="mt-3 text-sm text-sky-100">Less manual work</p>
-            </div>
-            <div className="rounded-3xl border border-white/10 bg-white/10 p-8 shadow-[0_30px_80px_-40px_rgba(0,0,0,0.35)]">
-              <p className="text-4xl font-semibold text-white">60%</p>
-              <p className="mt-3 text-sm text-sky-100">Faster operations</p>
-            </div>
-            <div className="rounded-3xl border border-white/10 bg-white/10 p-8 shadow-[0_30px_80px_-40px_rgba(0,0,0,0.35)]">
-              <p className="text-4xl font-semibold text-white">70%</p>
-              <p className="mt-3 text-sm text-sky-100">Productivity increase</p>
-            </div>
-            <div className="rounded-3xl border border-white/10 bg-white/10 p-8 shadow-[0_30px_80px_-40px_rgba(0,0,0,0.35)]">
-              <p className="text-4xl font-semibold text-white">99.9%</p>
-              <p className="mt-3 text-sm text-sky-100">System availability</p>
-            </div>
-            <div className="rounded-3xl border border-white/10 bg-white/10 p-8 shadow-[0_30px_80px_-40px_rgba(0,0,0,0.35)]">
-              <p className="text-4xl font-semibold text-white">100+</p>
-              <p className="mt-3 text-sm text-sky-100">Businesses served</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="bg-white py-16">
-        <div className="mx-auto grid max-w-7xl gap-10 px-6 sm:px-8 lg:grid-cols-[1.05fr_0.95fr] lg:px-12 lg:items-center">
-          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 p-3 shadow-sm">
-            <Image
-              src="/images/extra/image2.jpg"
-              alt="DKS ERP operations dashboard"
-              width={900}
-              height={640}
-              className="h-auto w-full rounded-xl object-cover"
-            />
-          </div>
-          <div className="space-y-6">
-            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-slate-500">Why choose us</p>
-            <h2 className="text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">
-              A polished ERP that feels simple, practical, and ready to grow.
-            </h2>
-            <p className="text-base leading-8 text-slate-600">
-              The UI is light, modern, and focused on the essentials. Teams can move from procurement to reporting without getting lost in clutter.
+            <p className="mt-5 text-lg text-slate-500">
+              See why modern manufacturers switch to DKS.
             </p>
-            <div className="rounded-xl border border-slate-200 bg-slate-50 p-6">
-              <p className="text-sm font-semibold text-slate-900">Designed for real business flow</p>
-              <p className="mt-2 text-sm leading-7 text-slate-600">
-                Whether you are running factory operations, managing warehouse movement, or reviewing finance, DKS ERP keeps the experience user-friendly and consistent.
-              </p>
+          </div>
+
+          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+            {/* header */}
+            <div className="grid grid-cols-[1.8fr_1.1fr_1.1fr] border-b border-slate-100 bg-slate-50 px-6 py-4">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Feature</p>
+              <p className="text-center text-[10px] font-bold uppercase tracking-widest text-slate-400">Traditional ERP</p>
+              <p className="text-center text-[10px] font-bold uppercase tracking-widest text-sky-600">DKS ERP</p>
             </div>
+            {comparison.map((row, i) => (
+              <div
+                key={row.feature}
+                className={`grid grid-cols-[1.8fr_1.1fr_1.1fr] items-center border-b border-slate-50 px-6 py-4 text-sm last:border-0 ${i % 2 === 1 ? "bg-slate-50/50" : ""}`}
+              >
+                <p className="font-medium text-slate-800">{row.feature}</p>
+                <div className="flex justify-center">
+                  {row.old === false ? (
+                    <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-rose-50 text-xs font-bold text-rose-400">
+                      ✕
+                    </span>
+                  ) : (
+                    <span className="text-slate-400">{row.old}</span>
+                  )}
+                </div>
+                <div className="flex justify-center">
+                  {row.dks === true ? (
+                    <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-emerald-50 text-xs font-bold text-emerald-600">
+                      ✓
+                    </span>
+                  ) : (
+                    <span className="font-bold text-slate-900">{row.dks}</span>
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
-      <section className="bg-slate-50 py-16">
+      {/* ══════════════════════════════════════════════════════════════════════
+          TESTIMONIALS
+      ══════════════════════════════════════════════════════════════════════ */}
+      <section className="bg-slate-50/60 py-24">
         <div className="mx-auto max-w-7xl px-6 sm:px-8 lg:px-12">
-          <div className="mb-10">
-            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-slate-500">Comparison</p>
-            <h2 className="mt-3 text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">
-              Traditional ERP vs. DKS ERP
-            </h2>
-          </div>
-          <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-            <div className="grid grid-cols-[1.7fr_1.3fr_1.3fr] border-b border-slate-200 bg-slate-50 px-6 py-4 text-sm font-semibold text-slate-600">
-              <div>Feature</div>
-              <div className="text-center">Traditional ERP</div>
-              <div className="text-center text-sky-700">DKS ERP</div>
-            </div>
-            <div className="divide-y divide-slate-200 text-sm text-slate-700">
-              <div className="grid grid-cols-[1.7fr_1.3fr_1.3fr] px-6 py-5">
-                <div>Implementation time</div>
-                <div className="text-center text-slate-500">6–12 months</div>
-                <div className="text-center font-semibold text-slate-900">2–6 weeks</div>
-              </div>
-              <div className="grid grid-cols-[1.7fr_1.3fr_1.3fr] px-6 py-5 bg-slate-50">
-                <div>Up-front cost</div>
-                <div className="text-center text-slate-500">₹25L+ licenses</div>
-                <div className="text-center font-semibold text-slate-900">Subscription, no licenses</div>
-              </div>
-              <div className="grid grid-cols-[1.7fr_1.3fr_1.3fr] px-6 py-5">
-                <div>Cloud-native</div>
-                <div className="text-center text-rose-500">✕</div>
-                <div className="text-center text-emerald-600">✓</div>
-              </div>
-              <div className="grid grid-cols-[1.7fr_1.3fr_1.3fr] px-6 py-5 bg-slate-50">
-                <div>Mobile apps</div>
-                <div className="text-center text-rose-500">✕</div>
-                <div className="text-center text-emerald-600">✓</div>
-              </div>
-              <div className="grid grid-cols-[1.7fr_1.3fr_1.3fr] px-6 py-5">
-                <div>Real-time dashboards</div>
-                <div className="text-center text-rose-500">✕</div>
-                <div className="text-center text-emerald-600">✓</div>
-              </div>
-              <div className="grid grid-cols-[1.7fr_1.3fr_1.3fr] px-6 py-5 bg-slate-50">
-                <div>GST & local compliance</div>
-                <div className="text-center text-slate-500">Add-on</div>
-                <div className="text-center font-semibold text-slate-900">Built-in</div>
-              </div>
-              <div className="grid grid-cols-[1.7fr_1.3fr_1.3fr] px-6 py-5">
-                <div>Customization</div>
-                <div className="text-center text-slate-500">Developer required</div>
-                <div className="text-center font-semibold text-slate-900">No-code workflows</div>
-              </div>
-              <div className="grid grid-cols-[1.7fr_1.3fr_1.3fr] px-6 py-5 bg-slate-50">
-                <div>Support</div>
-                <div className="text-center text-slate-500">Ticket queue</div>
-                <div className="text-center font-semibold text-slate-900">24×7 human support</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="bg-slate-50 py-16">
-        <div className="mx-auto max-w-7xl px-6 sm:px-8 lg:px-12">
-          <div className="mb-10 max-w-3xl">
-            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-sky-700">Testimonials</p>
-            <h2 className="mt-3 text-4xl font-semibold tracking-tight text-slate-900 sm:text-5xl">
+          <div className="mb-14 text-center">
+            <SectionLabel color="#b45309" bg="#fffbeb">Testimonials</SectionLabel>
+            <h2 className="text-4xl font-extrabold tracking-tight text-slate-900 sm:text-5xl">
               Loved by operators and owners.
             </h2>
           </div>
-          <div className="grid gap-6 lg:grid-cols-2">
-            {testimonials.map((item) => (
-              <div key={item.name} className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-                <div className="flex items-center gap-3 text-slate-500">
-                  <span className="text-sm font-semibold uppercase tracking-[0.32em] text-amber-500">★★★★★</span>
-                  <span className="text-sm">Customer review</span>
+
+          <div className="grid gap-5 md:grid-cols-2">
+            {testimonials.map((t) => (
+              <div
+                key={t.name}
+                className="flex flex-col justify-between rounded-2xl border border-slate-100 bg-white p-8 shadow-sm transition hover:shadow-md"
+              >
+                {/* stars */}
+                <div>
+                  <div className="flex gap-0.5">
+                    {[...Array(5)].map((_, i) => (
+                      <Star key={i} className="h-4 w-4 fill-amber-400 text-amber-400" />
+                    ))}
+                  </div>
+                  <p className="mt-5 text-base leading-8 text-slate-700">
+                    &ldquo;{t.quote}&rdquo;
+                  </p>
                 </div>
-                <p className="mt-6 text-lg leading-8 text-slate-900">“{item.quote}”</p>
                 <div className="mt-8 flex items-center gap-4">
-                  <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-sky-600 text-sm font-semibold text-white">
-                    {item.initials}
+                  <div
+                    className="flex h-11 w-11 items-center justify-center rounded-xl text-sm font-extrabold text-white shadow-sm"
+                    style={{ background: t.gradient }}
+                  >
+                    {t.initials}
                   </div>
                   <div>
-                    <p className="font-semibold text-slate-900">{item.name}</p>
-                    <p className="text-sm text-slate-500">{item.role}</p>
+                    <p className="font-bold text-slate-900">{t.name}</p>
+                    <p className="text-xs text-slate-400">
+                      {t.role} · {t.company}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -670,110 +641,287 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section id="contact" className="border-t border-slate-200 bg-[linear-gradient(90deg,#f8fbff_0%,#f8fafc_100%)] py-16">
-        <div className="mx-auto grid max-w-7xl gap-10 px-6 sm:px-8 lg:grid-cols-[0.95fr_1.05fr] lg:px-12 lg:items-start">
-          <div className="space-y-4">
-            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-slate-500">Contact us</p>
-            <h2 className="text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">
-              Let’s build a smoother ERP experience for your business.
+      {/* ══════════════════════════════════════════════════════════════════════
+          ABOUT
+      ══════════════════════════════════════════════════════════════════════ */}
+      <section id="about" className="py-24">
+        <div className="mx-auto max-w-7xl px-6 sm:px-8 lg:px-12">
+          <div className="mb-14 text-center">
+            <SectionLabel color="#4338ca" bg="#eef2ff">About Us</SectionLabel>
+            <h2 className="text-4xl font-extrabold tracking-tight text-slate-900 sm:text-5xl">
+              The team behind DKS ERP.
             </h2>
-            <p className="max-w-2xl text-base leading-8 text-slate-600">
-              Whether you want to explore the demo, request a walkthrough, or discuss a custom setup, we would love to hear from you. Fill out the form and our team will get back to you with the right next step.
+            <p className="mx-auto mt-5 max-w-2xl text-lg text-slate-500">
+              Founded by builders with deep roots in textile manufacturing and enterprise software.
             </p>
-            <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-              <div className="flex items-center gap-3 text-slate-900">
-                <CheckCircle2 className="h-5 w-5 text-sky-600" />
-                <p className="font-semibold">Demo access available</p>
-              </div>
-              <div className="mt-4 space-y-2 text-sm text-slate-600">
-                <p>bhushan.dks@gmail.com / 123123123</p>
-                <p>lalit.dks@gmail.com / 123123123</p>
-              </div>
-            </div>
           </div>
-          <form className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <label className="mb-2 block text-sm font-medium text-slate-700">Name</label>
-                <input className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none ring-0" placeholder="Your name" />
+
+          {/* founders */}
+          <div className="grid gap-6 sm:grid-cols-2">
+            {[
+              { name: "Bhushan Khairnar", role: "CEO & Co-Founder", initials: "BK", gradient: "linear-gradient(135deg,#0ea5e9,#6366f1)", about: "12+ years in textile manufacturing. Built DKS ERP from the factory floor up — solving problems he lived firsthand." },
+              { name: "Lalit Khairnar",   role: "COO & Co-Founder", initials: "LK", gradient: "linear-gradient(135deg,#10b981,#0369a1)", about: "Enterprise software veteran. Brings product architecture and customer success experience from 100+ factory deployments." },
+            ].map((f) => (
+              <div key={f.name} className="group flex gap-6 rounded-2xl border border-slate-100 bg-white p-8 shadow-sm transition hover:shadow-md hover:-translate-y-0.5">
+                <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl text-2xl font-extrabold text-white shadow-lg" style={{ background: f.gradient }}>
+                  {f.initials}
+                </div>
+                <div className="flex flex-col justify-between">
+                  <div>
+                    <p className="text-lg font-extrabold text-slate-900">{f.name}</p>
+                    <p className="text-sm font-semibold text-sky-600">{f.role}</p>
+                    <p className="mt-3 text-sm leading-6 text-slate-500">{f.about}</p>
+                  </div>
+                  <button className="mt-4 inline-flex w-fit items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-xs font-bold text-sky-600 transition hover:bg-slate-100">
+                    <Linkedin className="h-3.5 w-3.5" />
+                    Connect on LinkedIn
+                  </button>
+                </div>
               </div>
-              <div>
-                <label className="mb-2 block text-sm font-medium text-slate-700">Email</label>
-                <input className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none ring-0" placeholder="you@company.com" />
+            ))}
+          </div>
+
+          {/* timeline */}
+          <div className="mt-16 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {timeline.map((t, i) => (
+              <div key={t.year} className="rounded-2xl border border-slate-100 bg-slate-50 p-6">
+                <div
+                  className="mb-4 inline-flex h-9 w-9 items-center justify-center rounded-xl text-sm font-extrabold text-white"
+                  style={{ background: "linear-gradient(135deg,#0ea5e9,#6366f1)" }}
+                >
+                  {i + 1}
+                </div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-sky-600">{t.year}</p>
+                <p className="mt-1 font-bold text-slate-900">{t.title}</p>
+                <p className="mt-2 text-sm leading-6 text-slate-500">{t.desc}</p>
               </div>
-            </div>
-            <div className="mt-4">
-              <label className="mb-2 block text-sm font-medium text-slate-700">Company</label>
-              <input className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none ring-0" placeholder="Your company name" />
-            </div>
-            <div className="mt-4">
-              <label className="mb-2 block text-sm font-medium text-slate-700">Message</label>
-              <textarea className="min-h-32 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none ring-0" placeholder="Tell us what you need help with" />
-            </div>
-            <Button className="mt-6 w-full sm:w-auto">Send message</Button>
-          </form>
+            ))}
+          </div>
         </div>
       </section>
 
-      <footer className="bg-white py-14">
+      {/* ══════════════════════════════════════════════════════════════════════
+          CTA BANNER
+      ══════════════════════════════════════════════════════════════════════ */}
+      <section className="py-6">
         <div className="mx-auto max-w-7xl px-6 sm:px-8 lg:px-12">
-          <div className="grid gap-10 md:grid-cols-[1.25fr_0.8fr_0.8fr_0.8fr]">
-            <div className="space-y-4">
-              <div className="inline-flex items-center gap-2">
-                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-sky-600 text-white">
-                  <Building2 className="h-5 w-5" />
-                </div>
-                <p className="text-lg font-semibold text-slate-900">DKS ERP</p>
-              </div>
-              <p className="max-w-lg text-sm leading-7 text-slate-600">
-                The modern ERP for manufacturing, textile and production businesses. Built in India, trusted across Indian manufacturing teams.
+          <div
+            className="overflow-hidden rounded-3xl px-8 py-16 text-center sm:px-16"
+            style={{
+              background: "linear-gradient(135deg, #0369a1 0%, #0ea5e9 55%, #38bdf8 100%)",
+            }}
+          >
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-sky-200">
+              Start today
+            </p>
+            <h2 className="mt-3 text-4xl font-extrabold tracking-tight text-white sm:text-5xl">
+              Ready to see DKS ERP in action?
+            </h2>
+            <p className="mx-auto mt-5 max-w-xl text-lg text-sky-100">
+              Book a free demo. Our team walks you through the modules most relevant to your operation — no pressure, no obligation.
+            </p>
+            <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
+              <Link
+                href="#contact"
+                className="inline-flex items-center gap-2.5 rounded-full bg-white px-8 py-4 text-sm font-bold text-sky-700 shadow-lg transition hover:bg-sky-50 hover:-translate-y-0.5"
+              >
+                Book Free Demo <ArrowRight className="h-4 w-4" />
+              </Link>
+              <Link
+                href="/dashboard/login/v2"
+                className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/10 px-8 py-4 text-sm font-bold text-white backdrop-blur-sm transition hover:bg-white/20"
+              >
+                Sign in →
+              </Link>
+            </div>
+            <p className="mt-6 text-xs text-sky-200">
+              14-day free trial · No credit card required · Setup in hours, not months
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════════════════════════════════
+          CONTACT
+      ══════════════════════════════════════════════════════════════════════ */}
+      <section id="contact" className="py-24">
+        <div className="mx-auto max-w-7xl px-6 sm:px-8 lg:px-12">
+          <div className="grid gap-14 lg:grid-cols-[1fr_1.15fr] lg:items-start">
+            {/* left */}
+            <div>
+              <SectionLabel>Contact us</SectionLabel>
+              <h2 className="text-4xl font-extrabold tracking-tight text-slate-900 sm:text-5xl">
+                Let's talk about your business.
+              </h2>
+              <p className="mt-5 text-lg leading-8 text-slate-500">
+                Whether you want a live demo, a custom walkthrough or have a specific challenge — we'd love to hear from you.
               </p>
-              <div className="space-y-2 text-sm text-slate-600">
+
+              <div className="mt-10 space-y-4">
+                {[
+                  { icon: Mail,   label: "Email us",   value: "bhushan.dks@gmail.com" },
+                  { icon: Phone,  label: "Call us",    value: "+91 98765 43210" },
+                  { icon: MapPin, label: "Our office", value: "Mumbai, Maharashtra, India" },
+                ].map((c) => {
+                  const Icon = c.icon;
+                  return (
+                    <div key={c.label} className="flex items-center gap-4">
+                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-100 bg-slate-50">
+                        <Icon className="h-5 w-5 text-sky-600" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{c.label}</p>
+                        <p className="font-semibold text-slate-800">{c.value}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* demo info card */}
+              <div className="mt-10 rounded-2xl border border-sky-100 bg-sky-50 p-6">
+                <div className="flex items-center gap-3">
+                  <CheckCircle2 className="h-5 w-5 text-sky-600" />
+                  <p className="font-bold text-slate-900">Live demo access available</p>
+                </div>
+                <p className="mt-2 text-sm leading-6 text-slate-600">
+                  Try DKS ERP with real textile factory data. Every module is live to explore.
+                </p>
+                <div className="mt-4 space-y-1 font-mono text-sm text-slate-600">
+                  <p>bhushan.dks@gmail.com / 123123123</p>
+                  <p>lalit.dks@gmail.com / 123123123</p>
+                </div>
+              </div>
+            </div>
+
+            {/* form */}
+            <form className="rounded-2xl border border-slate-100 bg-white p-8 shadow-[0_20px_60px_rgba(15,23,42,0.08)]">
+              <p className="mb-7 text-xl font-bold text-slate-900">Send us a message</p>
+
+              <div className="grid gap-5 sm:grid-cols-2">
+                <div>
+                  <label className="mb-2 block text-[10px] font-bold uppercase tracking-widest text-slate-400">Full name</label>
+                  <input
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-900 outline-none transition focus:border-sky-400 focus:bg-white focus:ring-2 focus:ring-sky-100"
+                    placeholder="Rohit Mehta"
+                  />
+                </div>
+                <div>
+                  <label className="mb-2 block text-[10px] font-bold uppercase tracking-widest text-slate-400">Work email</label>
+                  <input
+                    type="email"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-900 outline-none transition focus:border-sky-400 focus:bg-white focus:ring-2 focus:ring-sky-100"
+                    placeholder="rohit@company.com"
+                  />
+                </div>
+              </div>
+
+              <div className="mt-5">
+                <label className="mb-2 block text-[10px] font-bold uppercase tracking-widest text-slate-400">Company name</label>
+                <input
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-900 outline-none transition focus:border-sky-400 focus:bg-white focus:ring-2 focus:ring-sky-100"
+                  placeholder="Northwind Textiles"
+                />
+              </div>
+
+              <div className="mt-5">
+                <label className="mb-2 block text-[10px] font-bold uppercase tracking-widest text-slate-400">How can we help?</label>
+                <select className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-900 outline-none transition focus:border-sky-400 focus:bg-white focus:ring-2 focus:ring-sky-100">
+                  <option>Book a free demo</option>
+                  <option>Request a custom walkthrough</option>
+                  <option>Ask about pricing</option>
+                  <option>Technical question</option>
+                  <option>Something else</option>
+                </select>
+              </div>
+
+              <div className="mt-5">
+                <label className="mb-2 block text-[10px] font-bold uppercase tracking-widest text-slate-400">Message</label>
+                <textarea
+                  className="min-h-28 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-900 outline-none transition focus:border-sky-400 focus:bg-white focus:ring-2 focus:ring-sky-100"
+                  placeholder="Tell us about your factory, team size, and what you'd like to improve..."
+                />
+              </div>
+
+              <button
+                type="submit"
+                className="mt-6 inline-flex w-full items-center justify-center gap-2.5 rounded-xl bg-sky-600 px-6 py-3.5 text-sm font-bold text-white shadow-sm shadow-sky-200 transition hover:bg-sky-700"
+              >
+                Send message <ArrowRight className="h-4 w-4" />
+              </button>
+              <p className="mt-3 text-center text-[11px] text-slate-400">
+                We typically respond within 2 hours during business hours.
+              </p>
+            </form>
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════════════════════════════════
+          FOOTER
+      ══════════════════════════════════════════════════════════════════════ */}
+      <footer className="border-t border-slate-900/10 bg-slate-950 pt-16 pb-8">
+        <div className="mx-auto max-w-7xl px-6 sm:px-8 lg:px-12">
+          <div className="grid gap-12 md:grid-cols-[1.5fr_1fr_1fr_1fr]">
+            {/* brand */}
+            <div className="space-y-5">
+              <Link href="/" className="inline-flex items-center gap-2.5">
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-sky-600 text-white">
+                  <Building2 className="h-5 w-5" />
+                </span>
+                <span className="text-lg font-extrabold text-white">
+                  DKS <span className="text-sky-400">ERP</span>
+                </span>
+              </Link>
+              <p className="max-w-xs text-sm leading-7 text-slate-400">
+                The modern ERP for textile and manufacturing businesses. Built in India, trusted by Indian factories.
+              </p>
+              <div className="space-y-1.5 text-sm text-slate-500">
                 <p>bhushan.dks@gmail.com</p>
                 <p>+91 98765 43210</p>
                 <p>Mumbai, India</p>
               </div>
             </div>
-            <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-500">Product</p>
-              <div className="mt-4 space-y-2 text-sm text-slate-600">
-                <p>Solutions</p>
-                <p>Modules</p>
-                <p>Pricing</p>
-                <p>Integrations</p>
-                <p>Changelog</p>
+
+            {[
+              {
+                title: "Product",
+                links: ["Solutions", "Modules", "Pricing", "Integrations", "Changelog", "Security"],
+              },
+              {
+                title: "Industries",
+                links: ["Textile & Weaving", "Manufacturing", "Food Processing", "Automobile", "Warehousing"],
+              },
+              {
+                title: "Company",
+                links: ["About", "Customers", "Blog", "Careers", "Privacy Policy", "Terms"],
+              },
+            ].map((col) => (
+              <div key={col.title}>
+                <p className="mb-5 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">{col.title}</p>
+                <ul className="space-y-3">
+                  {col.links.map((l) => (
+                    <li key={l}>
+                      <Link href="#" className="text-sm text-slate-400 transition hover:text-white">
+                        {l}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
               </div>
-            </div>
-            <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-500">Industries</p>
-              <div className="mt-4 space-y-2 text-sm text-slate-600">
-                <p>Textile</p>
-                <p>Manufacturing</p>
-                <p>Food</p>
-                <p>Automobile</p>
-                <p>Warehouse</p>
-              </div>
-            </div>
-            <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-500">Company</p>
-              <div className="mt-4 space-y-2 text-sm text-slate-600">
-                <p>About</p>
-                <p>Customers</p>
-                <p>Careers</p>
-                <p>Privacy</p>
-                <p>Terms</p>
-              </div>
-            </div>
+            ))}
           </div>
-          <div className="mt-10 border-t border-slate-200 pt-6 text-sm text-slate-500">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <p>© 2026 DKS ERP. All rights reserved.</p>
-              <div className="flex flex-wrap items-center gap-4">
-                <p>Privacy</p>
-                <p>Terms</p>
-                <p>Security</p>
-                <p>Status</p>
-              </div>
+
+          <div className="mt-14 flex flex-col gap-4 border-t border-slate-800 pt-8 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-xs text-slate-500">
+              © 2026 DKS ERP. All rights reserved. Made with ♥ in India.
+            </p>
+            <div className="flex gap-5 text-xs text-slate-500">
+              {["Privacy", "Terms", "Security", "Status"].map((l) => (
+                <Link key={l} href="#" className="transition hover:text-white">
+                  {l}
+                </Link>
+              ))}
             </div>
           </div>
         </div>

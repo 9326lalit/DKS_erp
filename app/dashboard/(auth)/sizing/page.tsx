@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -113,7 +113,6 @@ type ProductionValues = z.infer<typeof productionSchema>;
 type FactoryReceivingValues = z.infer<typeof factoryReceivingSchema>;
 
 export default function SizingPage() {
-  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("overview");
 
   // Zustand Store
@@ -127,6 +126,7 @@ export default function SizingPage() {
     remainingStockKg,
     createBatch,
     createOpeningStock,
+    updateOpeningStock,
     createFactoryReceiving
   } = useSizingStore();
 
@@ -227,7 +227,27 @@ export default function SizingPage() {
     if (po) {
       productionForm.setValue("bagsIssued", po.totalBagsOrdered || 10);
       productionForm.setValue("weightPerBagKg", po.perBagWeightKg || 50);
-      toast.info(`Auto-populated Production PO info for ${selectedPoNo}`);
+
+      // Auto-override Set Number from opening stock linked to this PO
+      const linkedStock = openingStocks.find((s) => s.poNumber === selectedPoNo);
+      if (linkedStock) {
+        productionForm.setValue("setNumber", linkedStock.setNumber);
+        toast.info(
+          `Auto-populated: ${selectedPoNo} → Set ${linkedStock.setNumber} | ${po.totalBagsOrdered} Bags, ${po.totalWeightKg} KG | Remaining Stock: ${linkedStock.remainingStockKg} KG`
+        );
+      } else {
+        toast.info(`Auto-populated Production PO info for ${selectedPoNo}`);
+      }
+    }
+  };
+
+  const handlePOSelectReceiving = (selectedPoNo: string) => {
+    receivingForm.setValue("poNumber", selectedPoNo);
+    // Auto-override Set Number from opening stock linked to this PO
+    const linkedStock = openingStocks.find((s) => s.poNumber === selectedPoNo);
+    if (linkedStock) {
+      receivingForm.setValue("setNumber", linkedStock.setNumber);
+      toast.info(`Auto-populated: ${selectedPoNo} → Set ${linkedStock.setNumber}`);
     }
   };
 
@@ -238,10 +258,22 @@ export default function SizingPage() {
 
   const prodBags = productionForm.watch("bagsIssued") || 0;
   const prodBagWeight = productionForm.watch("weightPerBagKg") || 0;
-  const prodTotalWeight = prodBags * prodBagWeight;
+  const prodTotalWeight = prodBags * prodBagWeight; // Base yarn weight (used for sizing charge)
+
+  const prodChemicalAdded = Number(productionForm.watch("sizingChemicalAddedKg")) || 0;
+  const prodGrandTotalWeight = prodTotalWeight + prodChemicalAdded; // Base + Chemical (total on beam)
 
   const prodRate = productionForm.watch("ratePerKg") || 0;
-  const prodSizingCharge = prodTotalWeight * prodRate; // Auto calculation: Material Used × Rate
+  const prodSizingCharge = prodTotalWeight * prodRate; // Sizing charge only on BASE yarn weight
+
+  // Remaining stock lookup for selected PO (production modal)
+  const prodSelectedPO = productionForm.watch("poNumber");
+  const prodLinkedStock = openingStocks.find((s) => s.poNumber === prodSelectedPO);
+  const prodIsFullyConsumed = prodLinkedStock ? prodLinkedStock.remainingStockKg === 0 : false;
+  const prodIsOverIssuing = prodLinkedStock ? prodTotalWeight > prodLinkedStock.remainingStockKg && prodLinkedStock.remainingStockKg > 0 : false;
+
+  // Derived set numbers from opening stocks for dynamic dropdowns
+  const availableSetNumbers = openingStocks.map((s) => ({ setNumber: s.setNumber, poNumber: s.poNumber }));
 
   // Watched Values for Opening Stock Calculations
   const opBags = openingForm.watch("totalBags") || 0;
@@ -283,9 +315,10 @@ export default function SizingPage() {
   };
 
   const handleProductionSubmit = (values: ProductionValues) => {
-    const totalWeight = values.bagsIssued * values.weightPerBagKg;
+    const totalWeight = values.bagsIssued * values.weightPerBagKg; // Base yarn weight
+    const chemicalAdded = values.sizingChemicalAddedKg || 0;
     const totalCuts = values.bhimCount * values.cutPerBhim;
-    const sizingCharges = totalWeight * values.ratePerKg;
+    const sizingCharges = totalWeight * values.ratePerKg; // Charge only on base yarn
 
     const batch = {
       id: `SZ-ID-${Date.now()}`,
@@ -298,6 +331,7 @@ export default function SizingPage() {
       totalCuts,
       totalPipes: values.bhimCount,
       materialUsedKg: totalWeight,
+      sizingChemicalAddedKg: chemicalAdded > 0 ? chemicalAdded : undefined,
       ratePerKg: values.ratePerKg,
       sizingChargesRs: sizingCharges,
       sizingDoneBy: "Outsourced" as const,
@@ -307,7 +341,24 @@ export default function SizingPage() {
     };
 
     createBatch(batch);
-    toast.success(`Production Entry saved! Total Cuts: ${totalCuts}, Sizing Charge: ₹${sizingCharges.toLocaleString("en-IN")}`);
+
+    // Update linked opening stock's materialUsedKg and remainingStockKg
+    const linkedStock = openingStocks.find((s) => s.poNumber === values.poNumber);
+    if (linkedStock) {
+      const newUsed = linkedStock.materialUsedKg + totalWeight;
+      const newRemaining = Math.max(0, linkedStock.totalWeightKg - newUsed);
+      updateOpeningStock({
+        ...linkedStock,
+        materialUsedKg: newUsed,
+        remainingStockKg: newRemaining
+      });
+    }
+
+    toast.success(
+      `Production Entry saved! Batch: SZ-2026-${String(batches.length + 1).padStart(4, "0")} | Cuts: ${totalCuts} | Charge: ₹${sizingCharges.toLocaleString("en-IN")}${
+        linkedStock ? ` | Remaining Stock: ${Math.max(0, linkedStock.remainingStockKg - totalWeight)} KG` : ""
+      }`
+    );
     setProductionModalOpen(false);
   };
 
@@ -856,7 +907,7 @@ export default function SizingPage() {
           <DialogHeader>
             <DialogTitle className="text-sm font-bold">New Sizing Production Entry</DialogTitle>
             <DialogDescription className="text-xs">
-              Auto-calculates Cuts (`Bhim × Cuts/Bhim`) and Sizing Charges (`Material Used × Rate/kg`).
+              Selecting a PO auto-fills Set Number, Bags &amp; Weight. Sizing Charge = Base Yarn Weight × Rate/kg.
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={productionForm.handleSubmit(handleProductionSubmit)} className="space-y-4 pt-2">
@@ -881,24 +932,40 @@ export default function SizingPage() {
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
-                <Label className="text-xs font-semibold text-primary">PO Number (Select to Auto-Fill) *</Label>
+                <Label className="text-xs font-semibold text-primary">PO Number (Overrides Set #) *</Label>
                 <Select onValueChange={handlePOSelectProduction} value={productionForm.watch("poNumber")}>
-                  <SelectTrigger className="h-8 text-xs font-mono"><SelectValue placeholder="Select PO #" /></SelectTrigger>
+                  <SelectTrigger className="h-8 text-xs font-mono border-primary/40"><SelectValue placeholder="Select PO #" /></SelectTrigger>
                   <SelectContent>
-                    {pos.map((p) => (
-                      <SelectItem key={p.id} value={p.poNumber}>{p.poNumber} — {p.itemName}</SelectItem>
-                    ))}
+                    {pos.map((p) => {
+                      const linked = openingStocks.find((s) => s.poNumber === p.poNumber);
+                      return (
+                        <SelectItem key={p.id} value={p.poNumber}>
+                          {p.poNumber} — {p.itemName}
+                          {linked ? ` | ${linked.remainingStockKg} KG left` : ""}
+                        </SelectItem>
+                      );
+                    })}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-1">
-                <Label className="text-xs font-semibold">Set Number *</Label>
+                <Label className="text-xs font-semibold">Set Number (Auto from PO) *</Label>
                 <Select onValueChange={(v) => productionForm.setValue("setNumber", v)} value={productionForm.watch("setNumber")}>
-                  <SelectTrigger className="h-8 text-xs font-mono"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="h-8 text-xs font-mono bg-muted/20"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="SET-100">SET-100</SelectItem>
-                    <SelectItem value="SET-121">SET-121</SelectItem>
-                    <SelectItem value="SET-2026-001">SET-2026-001</SelectItem>
+                    {availableSetNumbers.length > 0 ? (
+                      availableSetNumbers.map((s) => (
+                        <SelectItem key={s.setNumber} value={s.setNumber}>
+                          {s.setNumber} ({s.poNumber})
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <>
+                        <SelectItem value="SET-100">SET-100</SelectItem>
+                        <SelectItem value="SET-121">SET-121</SelectItem>
+                        <SelectItem value="SET-2026-001">SET-2026-001</SelectItem>
+                      </>
+                    )}
                   </SelectContent>
                 </Select>
               </div>
@@ -935,17 +1002,58 @@ export default function SizingPage() {
               <Input type="number" step="0.1" {...productionForm.register("ratePerKg", { valueAsNumber: true })} className="h-8 text-xs font-mono" placeholder="5.00" />
             </div>
 
+            {/* Stock Availability Banner */}
+            {prodLinkedStock && (
+              <div className={`p-2.5 rounded-lg border text-xs flex items-center justify-between ${
+                prodIsFullyConsumed
+                  ? "bg-red-50 border-red-300 dark:bg-red-950/30 dark:border-red-700"
+                  : prodIsOverIssuing
+                  ? "bg-amber-50 border-amber-300 dark:bg-amber-950/30 dark:border-amber-700"
+                  : "bg-emerald-50 border-emerald-300 dark:bg-emerald-950/30 dark:border-emerald-700"
+              }`}>
+                <span className={`font-semibold ${
+                  prodIsFullyConsumed ? "text-red-700 dark:text-red-400" :
+                  prodIsOverIssuing ? "text-amber-700 dark:text-amber-400" :
+                  "text-emerald-700 dark:text-emerald-400"
+                }`}>
+                  {prodIsFullyConsumed
+                    ? `⚠ Set ${prodLinkedStock.setNumber}: Fully Consumed — 0 KG remaining`
+                    : prodIsOverIssuing
+                    ? `⚠ Set ${prodLinkedStock.setNumber}: Only ${prodLinkedStock.remainingStockKg} KG available (issuing ${prodTotalWeight} KG)`
+                    : `✓ Set ${prodLinkedStock.setNumber}: ${prodLinkedStock.remainingStockKg} KG available in stock`
+                  }
+                </span>
+                <span className="font-mono text-muted-foreground">
+                  Total issued: {prodLinkedStock.totalWeightKg} KG | Used: {prodLinkedStock.materialUsedKg} KG
+                </span>
+              </div>
+            )}
+
             {/* Calculated Summary Card */}
             <div className="p-3 bg-muted/20 border border-border/40 rounded-lg space-y-1.5 text-xs">
-              <div className="flex justify-between"><span className="text-muted-foreground">Base Yarn Weight Issued:</span><span className="font-bold">{prodTotalWeight} KG</span></div>
-              {Number(productionForm.watch("sizingChemicalAddedKg")) > 0 && (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Base Yarn Weight Issued:</span>
+                <span className="font-bold">{prodTotalWeight} KG</span>
+              </div>
+              {prodChemicalAdded > 0 && (
                 <div className="flex justify-between text-emerald-600 font-bold">
                   <span>Chemical / Extra Material Added:</span>
-                  <span>+{productionForm.watch("sizingChemicalAddedKg")} KG (Total: {prodTotalWeight + Number(productionForm.watch("sizingChemicalAddedKg"))} KG)</span>
+                  <span>+{prodChemicalAdded} KG (Total on Beam: {prodGrandTotalWeight} KG)</span>
                 </div>
               )}
-              <div className="flex justify-between"><span className="text-muted-foreground">Total Calculated Cuts ({prodBhim} Bhim × {prodCuts} Cuts):</span><span className="font-bold text-foreground">{prodTotalCuts} Cuts</span></div>
-              <div className="flex justify-between text-primary font-bold"><span className="text-primary">Total Sizing Charge ({prodTotalWeight} KG × ₹{prodRate}/kg):</span><span>₹{prodSizingCharge.toLocaleString("en-IN")}</span></div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Total Calculated Cuts ({prodBhim} Bhim × {prodCuts} Cuts):</span>
+                <span className="font-bold text-foreground">{prodTotalCuts} Cuts</span>
+              </div>
+              <div className="border-t border-border/40 pt-1.5 flex justify-between text-primary font-bold">
+                <span>Total Sizing Charge ({prodTotalWeight} KG × ₹{prodRate}/kg):</span>
+                <span>₹{prodSizingCharge.toLocaleString("en-IN")}</span>
+              </div>
+              {prodChemicalAdded > 0 && (
+                <p className="text-[10px] text-muted-foreground italic">
+                  Note: Sizing charge is on base yarn weight only ({prodTotalWeight} KG), chemical ({prodChemicalAdded} KG) not charged.
+                </p>
+              )}
             </div>
 
             <DialogFooter className="pt-2">
@@ -989,24 +1097,34 @@ export default function SizingPage() {
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
-                <Label className="text-xs font-semibold">PO Number *</Label>
-                <Select onValueChange={(v) => receivingForm.setValue("poNumber", v)} value={receivingForm.watch("poNumber")}>
-                  <SelectTrigger className="h-8 text-xs font-mono"><SelectValue /></SelectTrigger>
+                <Label className="text-xs font-semibold text-primary">PO Number (Overrides Set #) *</Label>
+                <Select onValueChange={handlePOSelectReceiving} value={receivingForm.watch("poNumber")}>
+                  <SelectTrigger className="h-8 text-xs font-mono border-primary/40"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {pos.map((p) => (
-                      <SelectItem key={p.id} value={p.poNumber}>{p.poNumber}</SelectItem>
+                      <SelectItem key={p.id} value={p.poNumber}>{p.poNumber} — {p.itemName}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-1">
-                <Label className="text-xs font-semibold">Set Number *</Label>
+                <Label className="text-xs font-semibold">Set Number (Auto from PO) *</Label>
                 <Select onValueChange={(v) => receivingForm.setValue("setNumber", v)} value={receivingForm.watch("setNumber")}>
-                  <SelectTrigger className="h-8 text-xs font-mono"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="h-8 text-xs font-mono bg-muted/20"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="SET-100">SET-100</SelectItem>
-                    <SelectItem value="SET-121">SET-121</SelectItem>
-                    <SelectItem value="SET-2026-001">SET-2026-001</SelectItem>
+                    {availableSetNumbers.length > 0 ? (
+                      availableSetNumbers.map((s) => (
+                        <SelectItem key={s.setNumber} value={s.setNumber}>
+                          {s.setNumber} ({s.poNumber})
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <>
+                        <SelectItem value="SET-100">SET-100</SelectItem>
+                        <SelectItem value="SET-121">SET-121</SelectItem>
+                        <SelectItem value="SET-2026-001">SET-2026-001</SelectItem>
+                      </>
+                    )}
                   </SelectContent>
                 </Select>
               </div>
