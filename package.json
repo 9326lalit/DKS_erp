@@ -6,10 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint app components lib",
     "type-check": "tsc --noEmit",
     "audit": "npm run lint && npm run type-check",
-    "prepare": "husky"
+    "prepare": "node -e \"try { require('child_process').execSync('npx husky', { stdio: 'inherit' }) } catch (e) {}\""
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -120,6 +120,7 @@
     "eslint": "^9.39.2",
     "eslint-config-next": "^15.5.9",
     "eslint-plugin-better-tailwindcss": "^3.8.0",
+    "husky": "^9.1.7",
     "prettier": "^3.7.4",
     "prettier-plugin-tailwindcss": "^0.6.14",
     "tailwindcss": "^4.1.18",
