@@ -22,7 +22,7 @@ import { toast } from "sonner";
 
 export default function UserMenu() {
   const router = useRouter();
-  const { currentUser, tenants, activeTenantId, switchRole, logout } = useTenantStore();
+  const { currentUser, tenants, activeTenantId, switchRole, logout, isGlobalSuperAdmin } = useTenantStore();
   const activeTenant = tenants.find((t) => t.id === activeTenantId) || tenants[0];
 
   const name = currentUser?.name || activeTenant.businessDetails.ownerName || "Mill Owner";
@@ -115,10 +115,12 @@ export default function UserMenu() {
             </DropdownMenuSubContent>
           </DropdownMenuSub>
 
-          <DropdownMenuItem onClick={() => router.push("/dashboard/masters/tenants")} className="cursor-pointer text-xs">
-            <Building2 className="h-4 w-4 text-emerald-500" />
-            <span>Manage Tenant Mills ({tenants.length})</span>
-          </DropdownMenuItem>
+          {isGlobalSuperAdmin && (
+            <DropdownMenuItem onClick={() => router.push("/dashboard/super-admin/tenants")} className="cursor-pointer text-xs">
+              <Building2 className="h-4 w-4 text-emerald-500" />
+              <span>Manage Tenant Directory ({tenants.length})</span>
+            </DropdownMenuItem>
+          )}
           <DropdownMenuItem onClick={() => router.push("/dashboard/masters")} className="cursor-pointer text-xs">
             <ShieldCheck className="h-4 w-4" />
             <span>Mill Business Settings</span>

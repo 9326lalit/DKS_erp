@@ -14,6 +14,7 @@ export interface TenantUnit {
 
 export type UserRole =
   | "Global Super Admin"
+  | "Business Owner"
   | "Super Admin"
   | "Owner"
   | "Mill Manager"
@@ -63,19 +64,26 @@ export const ROLE_PERMISSIONS: Record<UserRole, RolePermissionConfig> = {
     allowedNavGroupTitles: ["SaaS Control Center"],
     description: "SaaS Executive Scope: Platform Overview, Tenant Directory, Global Factories, Billing Subscriptions & Audit Logs."
   },
-  "Super Admin": {
-    role: "Super Admin",
-    title: "Mill Owner / Super Admin",
+  "Business Owner": {
+    role: "Business Owner",
+    title: "Business Owner",
     badgeColor: "bg-emerald-600 text-white font-bold border-emerald-500",
     allowedNavGroupTitles: ["Operations", "Master Data", "Yarn (Tana & Bana)", "Weaving & Production", "Procurement & Sizing", "Financials & Reports"],
-    description: "Complete Mill Access: Master Registries, Factory Sheds, Yarn Purchasing, Production, Financials & Business Setup."
+    description: "Complete Business Access: Master Registries, Factory Sheds, Yarn Purchasing, Production, Financials & Business Setup."
+  },
+  "Super Admin": {
+    role: "Business Owner",
+    title: "Business Owner",
+    badgeColor: "bg-emerald-600 text-white font-bold border-emerald-500",
+    allowedNavGroupTitles: ["Operations", "Master Data", "Yarn (Tana & Bana)", "Weaving & Production", "Procurement & Sizing", "Financials & Reports"],
+    description: "Complete Business Access: Master Registries, Factory Sheds, Yarn Purchasing, Production, Financials & Business Setup."
   },
   "Owner": {
-    role: "Owner",
-    title: "Mill Owner",
+    role: "Business Owner",
+    title: "Business Owner",
     badgeColor: "bg-emerald-600 text-white font-bold border-emerald-500",
     allowedNavGroupTitles: ["Operations", "Master Data", "Yarn (Tana & Bana)", "Weaving & Production", "Procurement & Sizing", "Financials & Reports"],
-    description: "Complete Mill Access: Master Registries, Factory Sheds, Yarn Purchasing, Production, Financials & Business Setup."
+    description: "Complete Business Access: Master Registries, Factory Sheds, Yarn Purchasing, Production, Financials & Business Setup."
   },
   "Mill Manager": {
     role: "Mill Manager",

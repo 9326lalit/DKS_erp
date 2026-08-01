@@ -107,12 +107,6 @@ export const navItems: NavGroup[] = [
     title: "Master Data",
     items: [
       {
-        title: "Tenant Organizations",
-        href: "/dashboard/masters/tenants",
-        icon: Building2,
-        isNew: true
-      },
-      {
         title: "Open Stock Master",
         href: "/dashboard/masters/open-stock",
         icon: Layers

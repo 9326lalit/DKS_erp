@@ -116,81 +116,39 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   align="end"
                   sideOffset={4}
                 >
-                <DropdownMenuLabel className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-2 py-1 flex items-center justify-between">
-                  <span>Multi-Tenant Organizations</span>
-                  <Badge variant="secondary" className="text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-0">
-                    {tenants.length} Mills
-                  </Badge>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
+                  <DropdownMenuLabel className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-2 py-1 flex items-center justify-between">
+                    <span>{activeTenant.name} Shed Units</span>
+                    <Badge variant="secondary" className="text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-0">
+                      {activeTenant.units.length} Units
+                    </Badge>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
 
-                <DropdownMenuGroup className="space-y-1 my-1">
-                  {tenants.map((tenant) => {
-                    const isCurrent = tenant.id === activeTenantId;
-                    return (
-                      <DropdownMenuItem
-                        key={tenant.id}
-                        onClick={() => handleTenantSwitch(tenant.id)}
-                        className={`flex items-center justify-between gap-3 p-2.5 rounded-lg cursor-pointer ${
-                          isCurrent ? "bg-emerald-500/10 text-emerald-900 dark:text-emerald-200 font-semibold" : ""
-                        }`}
-                      >
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          <span className="text-lg">{tenant.logo}</span>
-                          <div className="flex flex-col min-w-0">
-                            <span className="text-sm truncate">{tenant.name}</span>
-                            <span className="text-[11px] text-muted-foreground truncate">{tenant.cluster}</span>
-                          </div>
-                        </div>
-                        {isCurrent ? (
-                          <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                        ) : (
-                          <span className="text-[10px] font-mono text-muted-foreground shrink-0">{tenant.factoryDetails.totalLooms} Looms</span>
-                        )}
-                      </DropdownMenuItem>
-                    );
-                  })}
-                </DropdownMenuGroup>
-
-                {activeTenant.units.length > 0 && (
-                  <>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuLabel className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-2 py-1">
-                      Active Tenant Sheds / Units ({activeTenant.name})
-                    </DropdownMenuLabel>
-                    <DropdownMenuGroup className="space-y-1 my-1">
-                      {activeTenant.units.map((unit) => {
-                        const isUnitCurrent = unit.id === activeUnitId;
-                        return (
-                          <DropdownMenuItem
-                            key={unit.id}
-                            onClick={() => handleUnitSwitch(unit.id)}
-                            className={`flex items-center justify-between gap-2 p-2 rounded-lg cursor-pointer text-xs ${
-                              isUnitCurrent ? "bg-accent font-medium text-foreground" : "text-muted-foreground"
-                            }`}
-                          >
-                            <div className="flex items-center gap-2 truncate">
-                              <Factory className="h-3.5 w-3.5 shrink-0" />
-                              <span className="truncate">{unit.name}</span>
+                  <DropdownMenuGroup className="space-y-1 my-1">
+                    {activeTenant.units.map((unit) => {
+                      const isUnitCurrent = unit.id === activeUnitId;
+                      return (
+                        <DropdownMenuItem
+                          key={unit.id}
+                          onClick={() => handleUnitSwitch(unit.id)}
+                          className={`flex items-center justify-between gap-2 p-2 rounded-lg cursor-pointer text-xs ${
+                            isUnitCurrent ? "bg-emerald-500/10 font-bold text-emerald-900 dark:text-emerald-200" : "text-muted-foreground"
+                          }`}
+                        >
+                          <div className="flex items-center gap-2 truncate">
+                            <Factory className="h-4 w-4 shrink-0 text-emerald-500" />
+                            <div className="flex flex-col truncate">
+                              <span className="truncate text-foreground font-semibold">{unit.name}</span>
+                              <span className="text-[10px] text-muted-foreground">{unit.type} • {unit.totalLooms > 0 ? `${unit.totalLooms} Looms` : "Support Unit"}</span>
                             </div>
-                            {isUnitCurrent && <Check className="h-3.5 w-3.5 text-emerald-500 shrink-0" />}
-                          </DropdownMenuItem>
-                        );
-                      })}
-                    </DropdownMenuGroup>
-                  </>
-                )}
-
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={() => router.push("/dashboard/masters/tenants")}
-                  className="flex items-center gap-2 p-2 text-xs font-medium text-emerald-600 dark:text-emerald-400 cursor-pointer"
-                >
-                  <Plus className="h-4 w-4" />
-                  <span>Register & Manage Tenant Mills</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                          </div>
+                          {isUnitCurrent && <Check className="h-4 w-4 text-emerald-500 shrink-0" />}
+                        </DropdownMenuItem>
+                      );
+                    })}
+                  </DropdownMenuGroup>
+                </DropdownMenuContent>
+              </DropdownMenu>
             )}
           </SidebarMenuItem>
         </SidebarMenu>
