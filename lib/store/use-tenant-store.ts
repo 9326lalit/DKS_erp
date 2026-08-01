@@ -60,8 +60,8 @@ export const ROLE_PERMISSIONS: Record<UserRole, RolePermissionConfig> = {
     role: "Global Super Admin",
     title: "Global Platform Super Admin",
     badgeColor: "bg-amber-500 text-slate-950 font-bold border-amber-400",
-    allowedNavGroupTitles: ["SaaS Control Center", "Operations"],
-    description: "Essential SaaS Access: Platform Dashboard, Global Factory Sheds, SaaS Subscriptions & System Audit Logs."
+    allowedNavGroupTitles: ["SaaS Control Center"],
+    description: "SaaS Executive Scope: Platform Overview, Tenant Directory, Global Factories, Billing Subscriptions & Audit Logs."
   },
   "Super Admin": {
     role: "Super Admin",

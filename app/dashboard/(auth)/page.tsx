@@ -43,12 +43,21 @@ import { Badge } from "@/components/ui/badge";
 
 import { useTenantStore, ROLE_PERMISSIONS, UserRole } from "@/lib/store/use-tenant-store";
 import { UserCheck, ShieldCheck, Crown, Users } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 export default function DashboardPage() {
+  const router = useRouter();
   const { businessDetails, factoryDetails, financialYearDetails } = useERPStore();
   const { currentUser, tenants, activeTenantId, switchRole, isGlobalSuperAdmin } = useTenantStore();
   const activeTenant = tenants.find((t) => t.id === activeTenantId) || tenants[0];
   const [refreshCount, setRefreshCount] = useState(0);
+
+  useEffect(() => {
+    if (isGlobalSuperAdmin) {
+      router.replace("/dashboard/super-admin");
+    }
+  }, [isGlobalSuperAdmin, router]);
 
   const role = currentUser?.role || "Super Admin";
   const roleConfig = ROLE_PERMISSIONS[role];

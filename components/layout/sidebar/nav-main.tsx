@@ -72,6 +72,11 @@ export const navItems: NavGroup[] = [
         isNew: true
       },
       {
+        title: "Tenant Directory",
+        href: "/dashboard/super-admin/tenants",
+        icon: Building2
+      },
+      {
         title: "Global Factory Sheds",
         href: "/dashboard/super-admin/factories",
         icon: Factory
