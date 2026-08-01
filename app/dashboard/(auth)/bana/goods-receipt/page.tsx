@@ -149,9 +149,26 @@ export default function BanaGRNListPage() {
   });
 
   const columns: TableColumn<BanaGRN>[] = [
-    { key: "grnNumber", header: "GRN Number", sortable: true, render: (item) => <span className="font-bold text-primary">{item.grnNumber}</span> },
+    {
+      key: "grnNumber",
+      header: "GRN Number",
+      sortable: true,
+      render: (item) => (
+        <Link href={`/dashboard/bana/goods-receipt/${item.id}`} className="font-bold text-primary hover:underline">
+          {item.grnNumber}
+        </Link>
+      )
+    },
     { key: "grnDate", header: "GRN Date", sortable: true },
-    { key: "linkedPONumber", header: "Linked PO", render: (item) => <span className="font-semibold text-xs">{item.linkedPONumber}</span> },
+    {
+      key: "linkedPONumber",
+      header: "Linked PO",
+      render: (item) => (
+        <Link href="/dashboard/bana/purchase-orders" className="font-semibold text-xs text-primary hover:underline">
+          {item.linkedPONumber}
+        </Link>
+      )
+    },
     { key: "supplierName", header: "Supplier", sortable: true },
     { key: "bagsReceivedThisGRN", header: "Bags Recv.", render: (item) => <span className="font-bold">{item.bagsReceivedThisGRN}</span> },
     { key: "totalWeightReceived", header: "Weight (KG)", render: (item) => <span className="font-semibold">{item.totalWeightReceived.toLocaleString()}</span> },

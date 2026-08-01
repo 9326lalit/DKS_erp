@@ -150,12 +150,31 @@ export default function TanaGRNListPage() {
   });
 
   const columns: TableColumn<TanaGRN>[] = [
-    { key: "grnNumber", header: "GRN Number", sortable: true, render: (item) => <span className="font-bold text-primary">{item.grnNumber}</span> },
+    {
+      key: "grnNumber",
+      header: "GRN Number",
+      sortable: true,
+      render: (item) => (
+        <Link href={`/dashboard/tana/goods-receipt/${item.id}`} className="font-bold text-primary hover:underline">
+          {item.grnNumber}
+        </Link>
+      )
+    },
     { key: "grnDate", header: "GRN Date", sortable: true },
-    { key: "linkedPONumber", header: "Linked PO", render: (item) => <span className="font-semibold text-xs">{item.linkedPONumber}</span> },
+    {
+      key: "linkedPONumber",
+      header: "Linked PO",
+      render: (item) => (
+        <Link href="/dashboard/tana/purchase-orders" className="font-semibold text-xs text-primary hover:underline">
+          {item.linkedPONumber}
+        </Link>
+      )
+    },
     { key: "supplierName", header: "Supplier", sortable: true },
     { key: "bagsReceivedThisGRN", header: "Bags Recv.", render: (item) => <span className="font-bold">{item.bagsReceivedThisGRN}</span> },
-    { key: "totalWeightReceived", header: "Weight (KG)", render: (item) => <span className="font-semibold">{item.totalWeightReceived.toLocaleString()}</span> },
+    { key: "totalWeightReceived", header: "Weight (KG)", render: (item) => <span className="font-semibold">{item.totalWeightReceived.toLocaleString()} KG</span> },
+    { key: "ratePerKg", header: "Rate (₹/KG)", render: (item) => <span className="font-mono text-xs">₹{((item as any).ratePerKg || 280).toFixed(2)}</span> },
+    { key: "receivedValue", header: "Recv Value (₹)", render: (item) => <span className="font-bold text-primary font-mono">₹{((item.totalWeightReceived || 0) * ((item as any).ratePerKg || 280)).toLocaleString("en-IN")}</span> },
     { key: "conditionCheck", header: "Condition", render: (item) => <Badge variant="outline" className={`text-[10px] font-bold ${conditionColors[item.conditionCheck] || ""}`}>{item.conditionCheck}</Badge> },
     { key: "status", header: "Status", render: (item) => <Badge variant="outline" className={`text-[10px] font-bold ${grnStatusColors[item.status] || ""}`}>{item.status}</Badge>, sortable: true }
   ];

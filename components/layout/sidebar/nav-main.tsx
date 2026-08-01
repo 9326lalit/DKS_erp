@@ -74,6 +74,12 @@ export const navItems: NavGroup[] = [
     title: "Master Data",
     items: [
       {
+        title: "Open Stock Master",
+        href: "/dashboard/masters/open-stock",
+        icon: Layers,
+        isNew: true
+      },
+      {
         title: "Factory Master",
         href: "/dashboard/masters/factories",
         icon: Factory
@@ -91,8 +97,7 @@ export const navItems: NavGroup[] = [
       {
         title: "Labour Master",
         href: "/dashboard/masters/labour",
-        icon: Users,
-        isNew: true
+        icon: Users
       },
       {
         title: "Sizing Master",
@@ -118,8 +123,8 @@ export const navItems: NavGroup[] = [
         href: "/dashboard/tana/goods-receipt",
         icon: Truck,
         items: [
-          { title: "Tana GRNs", href: "/dashboard/tana/goods-receipt" },
-          { title: "Bana GRNs", href: "/dashboard/bana/goods-receipt" }
+          { title: "All Goods Receipts (GRN)", href: "/dashboard/tana/goods-receipt" },
+          { title: "New Goods Receipt", href: "/dashboard/tana/goods-receipt/new" }
         ]
       },
       {
@@ -127,8 +132,8 @@ export const navItems: NavGroup[] = [
         href: "/dashboard/tana/invoices",
         icon: FileText,
         items: [
-          { title: "Tana Invoices", href: "/dashboard/tana/invoices" },
-          { title: "Bana Invoices", href: "/dashboard/bana/invoices" }
+          { title: "All Purchase Invoices", href: "/dashboard/tana/invoices" },
+          { title: "New Purchase Invoice", href: "/dashboard/tana/invoices/new" }
         ]
       }
     ]

@@ -2,11 +2,13 @@
 
 import React, { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { toast } from "sonner";
-import { Plus, Trash2 } from "lucide-react";
+
 import { banaApiService } from "@/lib/services/bana-api";
 import { BanaPI } from "@/lib/store/use-bana-store";
 import { numberToWords } from "@/lib/store/use-tana-store";
@@ -15,13 +17,11 @@ import { PageHeader } from "@/components/textile-erp/page-header";
 import { MasterToolbar } from "@/components/textile-erp/master-toolbar";
 import { MasterTable, TableColumn } from "@/components/textile-erp/master-table";
 import { MasterDialog } from "@/components/textile-erp/master-dialog";
-import { DetailViewCard } from "@/components/textile-erp/detail-view-card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle
@@ -46,10 +46,10 @@ const schema = z.object({
 type FormValues = z.infer<typeof schema>;
 
 export default function BanaInvoicesPage() {
+  const router = useRouter();
   const queryClient = useQueryClient();
   const [searchValue, setSearchValue] = useState("");
   const [selectedFilters, setSelectedFilters] = useState<Record<string, string>>({ paymentStatus: "all" });
-  const [viewPI, setViewPI] = useState<BanaPI | null>(null);
   const [editPI, setEditPI] = useState<BanaPI | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<BanaPI | null>(null);
@@ -106,7 +106,6 @@ export default function BanaInvoicesPage() {
 
   const handleEditClick = (pi: BanaPI) => {
     setEditPI(pi);
-    setViewPI(null);
   };
 
   const handleDeleteClick = (pi: BanaPI) => {
@@ -144,13 +143,22 @@ export default function BanaInvoicesPage() {
   });
 
   const columns: TableColumn<BanaPI>[] = [
-    { key: "piNumber", header: "PI Number", sortable: true, render: (item) => <span className="font-bold text-primary">{item.piNumber}</span> },
+    {
+      key: "piNumber",
+      header: "PI Number",
+      sortable: true,
+      render: (item) => (
+        <Link href={`/dashboard/bana/invoices/${item.id}`} className="font-bold text-primary hover:underline">
+          {item.piNumber}
+        </Link>
+      )
+    },
     { key: "piDate", header: "PI Date", sortable: true },
     { key: "supplierName", header: "Supplier", sortable: true },
     { key: "supplierInvoiceNo", header: "Supp. Invoice No." },
     { key: "linkedGRNNumber", header: "Linked GRN", render: (item) => <span className="text-xs">{item.linkedGRNNumber}</span> },
     { key: "taxableAmount", header: "Taxable Amt", render: (item) => <span className="font-semibold">₹{item.taxableAmount.toLocaleString()}</span> },
-    { key: "netPayable", header: "Net Payable", render: (item) => <span className="font-bold">₹{item.netPayable.toLocaleString()}</span> },
+    { key: "netPayable", header: "Net Payable", render: (item) => <span className="font-bold text-emerald-600">₹{item.netPayable.toLocaleString()}</span> },
     { key: "dueDate", header: "Due Date", sortable: true },
     {
       key: "paymentStatus", header: "Payment", render: (item) => <Badge variant="outline" className={`text-[10px] font-bold ${paymentStatusColors[item.paymentStatus] || ""}`}>{item.paymentStatus}</Badge>, sortable: true
@@ -161,7 +169,7 @@ export default function BanaInvoicesPage() {
     <PageContainer>
       <PageHeader
         title="Bana Purchase Invoices"
-        description="Track Bana (Weft Yarn) purchase invoices with GST breakup and payment status. Series: BANA-PI-YYYY-NNNN."
+        description="Manage purchase invoices for Bana (Weft Yarn) with full tax breakdown."
         breadcrumbs={[{ title: "Dashboard", href: "/dashboard/default" }, { title: "Bana (Weft)" }, { title: "Invoices" }]}
       />
 
@@ -169,7 +177,7 @@ export default function BanaInvoicesPage() {
         searchValue={searchValue}
         onSearchChange={setSearchValue}
         createLabel="Create Invoice"
-        onCreateClick={() => window.location.href = "/dashboard/bana/invoices/new"}
+        onCreateClick={() => router.push("/dashboard/bana/invoices/new")}
         exportTitle="Bana Invoices"
         selectedFilters={selectedFilters}
         onFilterChange={(key, val) => setSelectedFilters(p => ({ ...p, [key]: val }))}
@@ -183,103 +191,56 @@ export default function BanaInvoicesPage() {
         data={filtered}
         columns={columns}
         isLoading={isLoading}
-        onView={(item) => setViewPI(item)}
+        // Direct navigation to By-ID page (NO popup modal!)
+        onView={(item) => router.push(`/dashboard/bana/invoices/${item.id}`)}
         onEdit={handleEditClick}
         onDelete={handleDeleteClick}
         onBulkDelete={(items) => items.forEach(i => deleteMutation.mutate(i.id))}
       />
 
-      {/* View Invoice Dialog */}
-      <MasterDialog
-        isOpen={!!viewPI}
-        onClose={() => setViewPI(null)}
-        title="Purchase Invoice Details (Bana)"
-        description={`PI #: ${viewPI?.piNumber} | Supplier Inv #: ${viewPI?.supplierInvoiceNo}`}
-      >
-        {viewPI && (
-          <DetailViewCard
-            title={viewPI.piNumber}
-            subtitle={`Supplier: ${viewPI.supplierName} • Linked GRN: ${viewPI.linkedGRNNumber}`}
-            statusBadge={
-              <Badge variant="outline" className={`text-[10px] font-bold ${paymentStatusColors[viewPI.paymentStatus] || ""}`}>
-                {viewPI.paymentStatus}
-              </Badge>
-            }
-            sections={[
-              {
-                title: "Supplier & References",
-                fields: [
-                  { label: "Supplier Name", value: viewPI.supplierName, highlight: true },
-                  { label: "Supplier Inv No.", value: viewPI.supplierInvoiceNo, mono: true },
-                  { label: "Supplier Inv Date", value: viewPI.supplierInvoiceDate || "—", mono: true },
-                  { label: "Linked GRN", value: viewPI.linkedGRNNumber, mono: true },
-                  { label: "Linked PO", value: viewPI.linkedPONumber, mono: true },
-                  { label: "Payment Terms", value: `${viewPI.paymentTermsDays || 30} Days Credit` }
-                ]
-              },
-              {
-                title: "Item & Quantity Specs",
-                fields: [
-                  { label: "Item Description", value: viewPI.itemDescription, colSpan: 2 },
-                  { label: "Total Weight", value: `${viewPI.totalWeightKg.toLocaleString()} KG`, highlight: true },
-                  { label: "Rate per KG", value: `₹${viewPI.ratePerKg}`, mono: true },
-                  { label: "Payment Due Date", value: viewPI.dueDate, mono: true, highlight: true }
-                ]
-              }
-            ]}
-          >
-            {/* Financial Totals Card */}
-            <div className="p-4 bg-muted/20 rounded-xl border border-border/30 space-y-2">
-              <div className="flex justify-between items-center text-xs">
-                <span className="text-muted-foreground">Taxable Amount:</span>
-                <span className="font-semibold font-mono">₹{viewPI.taxableAmount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
-              </div>
-              <div className="flex justify-between items-center text-xs">
-                <span className="text-muted-foreground">CGST @ {viewPI.cgstPercent}% + SGST @ {viewPI.sgstPercent}%:</span>
-                <span className="font-semibold font-mono">₹{(viewPI.cgstAmount + viewPI.sgstAmount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
-              </div>
-              {viewPI.roundOff !== 0 && (
-                <div className="flex justify-between items-center text-xs text-muted-foreground">
-                  <span>Round Off:</span>
-                  <span className="font-mono">₹{viewPI.roundOff}</span>
-                </div>
-              )}
-              <div className="flex justify-between items-center text-sm font-bold text-primary pt-2 border-t border-border/20">
-                <span>Net Total Payable:</span>
-                <span className="text-base font-mono font-bold">₹{viewPI.netPayable.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
-              </div>
-              {viewPI.amountInWords && (
-                <p className="text-[10px] text-muted-foreground italic pt-1">{viewPI.amountInWords}</p>
-              )}
-            </div>
-
-            <div className="flex justify-end gap-2 pt-2">
-              <Button variant="outline" size="sm" onClick={() => setViewPI(null)} className="h-8 px-6 cursor-pointer">
-                Close Details
-              </Button>
-            </div>
-          </DetailViewCard>
-        )}
-      </MasterDialog>
-
       {/* Edit Invoice Dialog */}
       <MasterDialog
         isOpen={!!editPI}
         onClose={() => setEditPI(null)}
-        title={`Edit Invoice: ${editPI?.piNumber}`}
-        description={`Supplier: ${editPI?.supplierName}`}
+        title="Edit Bana Purchase Invoice"
+        description={`Modify invoice details for ${editPI?.piNumber}`}
       >
         {editPI && (
-          <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4 text-xs">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold">PI Date *</Label>
-                <Input type="date" {...form.register("piDate")} />
-                {form.formState.errors.piDate && <p className="text-[10px] text-destructive">{form.formState.errors.piDate.message}</p>}
+          <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4 pt-2">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs">Supplier Invoice No.</Label>
+                <Input {...form.register("supplierInvoiceNo")} />
               </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold">Payment Status *</Label>
-                <Select onValueChange={(v) => form.setValue("paymentStatus", v as any)} value={form.watch("paymentStatus")}>
+              <div className="space-y-1">
+                <Label className="text-xs">Supplier Invoice Date</Label>
+                <Input type="date" {...form.register("supplierInvoiceDate")} />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs">PI Date</Label>
+                <Input type="date" {...form.register("piDate")} />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Rate per KG (₹)</Label>
+                <Input type="number" step="0.01" {...form.register("ratePerKg", { valueAsNumber: true })} />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs">Round Off (₹)</Label>
+                <Input type="number" step="0.01" {...form.register("roundOff", { valueAsNumber: true })} />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Payment Terms (Days)</Label>
+                <Input type="number" {...form.register("paymentTermsDays", { valueAsNumber: true })} />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Payment Status</Label>
+                <Select onValueChange={(v: any) => form.setValue("paymentStatus", v)} value={form.watch("paymentStatus")}>
                   <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Pending">Pending</SelectItem>
@@ -290,51 +251,7 @@ export default function BanaInvoicesPage() {
               </div>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold">Supplier Invoice No *</Label>
-                <Input {...form.register("supplierInvoiceNo")} />
-                {form.formState.errors.supplierInvoiceNo && <p className="text-[10px] text-destructive">{form.formState.errors.supplierInvoiceNo.message}</p>}
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold">Supplier Invoice Date *</Label>
-                <Input type="date" {...form.register("supplierInvoiceDate")} />
-                {form.formState.errors.supplierInvoiceDate && <p className="text-[10px] text-destructive">{form.formState.errors.supplierInvoiceDate.message}</p>}
-              </div>
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-3">
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold">Rate per KG (₹) *</Label>
-                <Input type="number" step="0.01" {...form.register("ratePerKg", { valueAsNumber: true })} />
-                {form.formState.errors.ratePerKg && <p className="text-[10px] text-destructive">{form.formState.errors.ratePerKg.message}</p>}
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold">Round Off (₹)</Label>
-                <Input type="number" step="0.01" {...form.register("roundOff", { valueAsNumber: true })} />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold">Payment Terms (Days) *</Label>
-                <Input type="number" {...form.register("paymentTermsDays", { valueAsNumber: true })} />
-              </div>
-            </div>
-
-            {/* Calculations Preview */}
-            <div className="bg-muted/10 rounded-lg border p-3 text-xs space-y-1">
-              <span className="font-bold text-[10px] text-muted-foreground uppercase tracking-wider block mb-1">Calculations Preview</span>
-              <div className="flex justify-between"><span>Weight</span><span>{editPI.totalWeightKg.toLocaleString()} KG</span></div>
-              <div className="flex justify-between"><span>Computed Taxable</span><span>₹{((form.watch("ratePerKg") || 0) * editPI.totalWeightKg).toLocaleString("en-IN", { maximumFractionDigits: 2 })}</span></div>
-              <div className="flex justify-between font-bold text-foreground border-t border-border/20 pt-1.5">
-                <span>Grand Total Net</span>
-                <span>
-                  ₹{(
-                    ((form.watch("ratePerKg") || 0) * editPI.totalWeightKg) * (1 + (editPI.cgstPercent + editPI.sgstPercent) / 100) + (form.watch("roundOff") || 0)
-                  ).toLocaleString("en-IN", { maximumFractionDigits: 2 })}
-                </span>
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-2 pt-2">
+            <div className="flex justify-end gap-2 pt-4">
               <Button type="button" variant="outline" onClick={() => setEditPI(null)}>Cancel</Button>
               <Button type="submit" disabled={updateMutation.isPending}>
                 {updateMutation.isPending ? "Saving..." : "Save Changes"}
@@ -344,20 +261,18 @@ export default function BanaInvoicesPage() {
         )}
       </MasterDialog>
 
-      {/* Delete Confirmation Alert */}
+      {/* Delete Confirmation */}
       <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-sm font-bold flex items-center gap-2 text-destructive">
-              <Trash2 className="h-4 w-4" />Delete Bana Purchase Invoice?
-            </AlertDialogTitle>
-            <AlertDialogDescription className="text-xs">
-              Are you sure you want to delete purchase invoice <strong>{deleteTarget?.piNumber}</strong>? This action cannot be undone.
+            <AlertDialogTitle>Delete Purchase Invoice?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete invoice <strong className="text-foreground">{deleteTarget?.piNumber}</strong>?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction className="bg-destructive text-white hover:bg-destructive/90 text-xs cursor-pointer" onClick={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)}>
+            <AlertDialogAction onClick={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)} className="bg-red-600 hover:bg-red-700">
               Delete Invoice
             </AlertDialogAction>
           </AlertDialogFooter>

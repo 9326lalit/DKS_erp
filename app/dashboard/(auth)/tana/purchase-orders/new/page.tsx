@@ -1,13 +1,14 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ArrowLeft, Plus, Trash2, Layers, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Layers, CheckCircle2, Calculator } from "lucide-react";
+
 import { tanaApiService } from "@/lib/services/tana-api";
 import { banaApiService } from "@/lib/services/bana-api";
 import { mastersApiService } from "@/lib/services/masters-api";
@@ -30,7 +31,9 @@ const itemSchema = z.object({
   totalBagsOrdered: z.number().min(1, "Qty must be at least 1"),
   perBagWeightKg: z.number().min(0.1, "Weight is required"),
   ratePerKg: z.number().min(0.01, "Rate is required"),
-  gstPercent: z.number().min(0, "GST % cannot be negative")
+  cgstPercent: z.number().min(0, "CGST % cannot be negative"),
+  sgstPercent: z.number().min(0, "SGST % cannot be negative"),
+  itemRemarks: z.string().optional()
 });
 
 const schema = z.object({
@@ -86,7 +89,9 @@ export default function NewPurchaseOrderPage() {
           totalBagsOrdered: 10,
           perBagWeightKg: 50,
           ratePerKg: 280,
-          gstPercent: 12
+          cgstPercent: 6,
+          sgstPercent: 6,
+          itemRemarks: "Raw White Warp Yarn Quality"
         }
       ]
     }
@@ -109,7 +114,9 @@ export default function NewPurchaseOrderPage() {
           totalBagsOrdered: 10,
           perBagWeightKg: 50,
           ratePerKg: 280,
-          gstPercent: 12
+          cgstPercent: 6,
+          sgstPercent: 6,
+          itemRemarks: "Raw White Warp Yarn"
         }
       ]);
     } else {
@@ -119,7 +126,9 @@ export default function NewPurchaseOrderPage() {
           totalBagsOrdered: 10,
           perBagWeightKg: 50,
           ratePerKg: 240,
-          gstPercent: 12
+          cgstPercent: 6,
+          sgstPercent: 6,
+          itemRemarks: "Weft Yarn Quality A1"
         }
       ]);
     }
@@ -127,23 +136,33 @@ export default function NewPurchaseOrderPage() {
 
   const watchedItems = form.watch("items") || [];
 
-  // Calculate row-by-row Item details & GST
+  // Calculate row-by-row Item details & CGST / SGST breakdown
   const rowCalculations = watchedItems.map((item) => {
     const qty = Number(item.totalBagsOrdered) || 0;
     const bagWeight = Number(item.perBagWeightKg) || 0;
     const totalWeightKg = qty * bagWeight;
     const rate = Number(item.ratePerKg) || 0;
-    const amount = totalWeightKg * rate;
-    const gstPercent = Number(item.gstPercent) || 0;
-    const gstAmount = amount * (gstPercent / 100);
-    const rowTotal = amount + gstAmount;
+    const grossAmount = totalWeightKg * rate;
+
+    const cgstPercent = Number(item.cgstPercent) || 0;
+    const sgstPercent = Number(item.sgstPercent) || 0;
+    const totalGstPercent = cgstPercent + sgstPercent;
+
+    const cgstAmount = grossAmount * (cgstPercent / 100);
+    const sgstAmount = grossAmount * (sgstPercent / 100);
+    const totalTaxAmount = cgstAmount + sgstAmount;
+    const netPayable = grossAmount + totalTaxAmount;
 
     return {
       totalWeightKg,
-      amount,
-      gstPercent,
-      gstAmount,
-      rowTotal
+      grossAmount,
+      cgstPercent,
+      sgstPercent,
+      totalGstPercent,
+      cgstAmount,
+      sgstAmount,
+      totalTaxAmount,
+      netPayable
     };
   });
 
@@ -152,12 +171,14 @@ export default function NewPurchaseOrderPage() {
     (acc, curr, idx) => {
       acc.totalQty += Number(watchedItems[idx]?.totalBagsOrdered) || 0;
       acc.totalWeight += curr.totalWeightKg;
-      acc.subtotalAmount += curr.amount;
-      acc.totalGstAmount += curr.gstAmount;
-      acc.grandTotal += curr.rowTotal;
+      acc.subtotalAmount += curr.grossAmount;
+      acc.totalCgstAmount += curr.cgstAmount;
+      acc.totalSgstAmount += curr.sgstAmount;
+      acc.totalGstAmount += curr.totalTaxAmount;
+      acc.grandTotal += curr.netPayable;
       return acc;
     },
-    { totalQty: 0, totalWeight: 0, subtotalAmount: 0, totalGstAmount: 0, grandTotal: 0 }
+    { totalQty: 0, totalWeight: 0, subtotalAmount: 0, totalCgstAmount: 0, totalSgstAmount: 0, totalGstAmount: 0, grandTotal: 0 }
   );
 
   const tanaMutation = useMutation({
@@ -181,9 +202,19 @@ export default function NewPurchaseOrderPage() {
   });
 
   const onSubmit = (values: FormValues) => {
+    // Duplicate PO Number Check
+    const existingOrders = values.materialType === "Tana" ? tanaPOs : banaPOs;
+    const isDuplicatePO = existingOrders.some(
+      (p) => p.poNumber.trim().toLowerCase() === autoPoNumber.trim().toLowerCase()
+    );
+
+    if (isDuplicatePO) {
+      toast.error(`Duplicate PO Error: Order '${autoPoNumber}' already exists! System regenerated next sequential number.`);
+      return;
+    }
+
     const formattedItems = values.items.map((item, idx) => {
       const calc = rowCalculations[idx];
-      const cgst = calc.gstPercent / 2;
       return {
         id: `PO-ITEM-${Date.now()}-${idx}`,
         itemName: item.itemName,
@@ -192,13 +223,14 @@ export default function NewPurchaseOrderPage() {
         perBagWeightKg: item.perBagWeightKg,
         totalWeightKg: parseFloat(calc.totalWeightKg.toFixed(2)),
         ratePerKg: item.ratePerKg,
-        grossAmount: parseFloat(calc.amount.toFixed(2)),
-        cgstPercent: cgst,
-        sgstPercent: cgst,
-        cgstAmount: parseFloat((calc.gstAmount / 2).toFixed(2)),
-        sgstAmount: parseFloat((calc.gstAmount / 2).toFixed(2)),
-        totalTaxAmount: parseFloat(calc.gstAmount.toFixed(2)),
-        netPayable: parseFloat(calc.rowTotal.toFixed(2))
+        grossAmount: parseFloat(calc.grossAmount.toFixed(2)),
+        cgstPercent: item.cgstPercent,
+        sgstPercent: item.sgstPercent,
+        cgstAmount: parseFloat(calc.cgstAmount.toFixed(2)),
+        sgstAmount: parseFloat(calc.sgstAmount.toFixed(2)),
+        totalTaxAmount: parseFloat(calc.totalTaxAmount.toFixed(2)),
+        netPayable: parseFloat(calc.netPayable.toFixed(2)),
+        itemRemarks: item.itemRemarks || ""
       };
     });
 
@@ -231,8 +263,8 @@ export default function NewPurchaseOrderPage() {
       grossAmount: parseFloat(grandTotals.subtotalAmount.toFixed(2)),
       cgstPercent: 6,
       sgstPercent: 6,
-      cgstAmount: parseFloat((grandTotals.totalGstAmount / 2).toFixed(2)),
-      sgstAmount: parseFloat((grandTotals.totalGstAmount / 2).toFixed(2)),
+      cgstAmount: parseFloat(grandTotals.totalCgstAmount.toFixed(2)),
+      sgstAmount: parseFloat(grandTotals.totalSgstAmount.toFixed(2)),
       totalTaxAmount: parseFloat(grandTotals.totalGstAmount.toFixed(2)),
       netPayable: parseFloat(grandTotals.grandTotal.toFixed(2)),
       amountInWords: numberToWords(Math.round(grandTotals.grandTotal)),
@@ -253,37 +285,37 @@ export default function NewPurchaseOrderPage() {
   return (
     <PageContainer>
       <PageHeader
-        title="Purchase Order Entry"
-        description={`Generating PO Number: ${autoPoNumber}`}
+        title="Create New Purchase Order"
+        description="Issue official Yarn Purchase Orders for Tana (Warp Yarn) or Bana (Weft Yarn) with line-item CGST / SGST breakdown."
         breadcrumbs={[
           { title: "Dashboard", href: "/dashboard/default" },
-          { title: "Purchase Orders", href: "/dashboard/tana/purchase-orders" },
+          { title: "Yarn POs", href: "/dashboard/tana/purchase-orders" },
           { title: "New PO" }
         ]}
         actions={
           <Button variant="outline" size="sm" onClick={() => router.back()} className="h-9 gap-1.5 cursor-pointer">
-            <ArrowLeft className="h-4 w-4" /> Back
+            <ArrowLeft className="h-4 w-4" /> Back to Purchase Orders
           </Button>
         }
       />
 
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        {/* Section 1: Category & Terms */}
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 max-w-6xl mx-auto">
+        {/* Section 1: PO Header & Material Type Selector */}
         <Card className="border-border/40 shadow-sm">
-          <CardHeader className="pb-4 bg-muted/5 border-b border-border/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <div>
-              <div className="flex items-center gap-2">
-                <Badge className="bg-primary/10 text-primary border-primary/20 font-bold">1</Badge>
-                <CardTitle className="text-sm font-bold">Order Category & Payment Terms</CardTitle>
+          <CardHeader className="pb-4 bg-muted/5 border-b border-border/10">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <Badge className="bg-primary/10 text-primary border-primary/20 font-bold">1</Badge>
+                  <CardTitle className="text-sm font-bold">Material Series &amp; PO Reference</CardTitle>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Select Tana (Warp) or Bana (Weft) series to auto-generate PO Number.
+                </p>
               </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Select Yarn Category (Tana/Bana) and specify PO terms.
-              </p>
-            </div>
 
-            <div className="flex flex-wrap items-center gap-3">
-              {/* Yarn Material Category Selector */}
-              <div className="flex gap-1.5 bg-card p-1 rounded-lg border border-border/40 shadow-xs">
+              {/* Material Type Selector Toggle */}
+              <div className="flex items-center gap-1.5 p-1 bg-muted rounded-lg border border-border/40">
                 <Button
                   type="button"
                   variant={materialType === "Tana" ? "default" : "ghost"}
@@ -312,6 +344,7 @@ export default function NewPurchaseOrderPage() {
               </span>
             </div>
           </CardHeader>
+
           <CardContent className="pt-5 space-y-4">
             <div className="grid gap-4 sm:grid-cols-3">
               <div className="space-y-1.5">
@@ -345,7 +378,7 @@ export default function NewPurchaseOrderPage() {
           <CardHeader className="pb-4 bg-muted/5 border-b border-border/10">
             <div className="flex items-center gap-2">
               <Badge className="bg-primary/10 text-primary border-primary/20 font-bold">2</Badge>
-              <CardTitle className="text-sm font-bold">Supplier & Receiving Factory</CardTitle>
+              <CardTitle className="text-sm font-bold">Supplier &amp; Receiving Factory</CardTitle>
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               Select yarn supplier and receiving factory shed.
@@ -416,20 +449,25 @@ export default function NewPurchaseOrderPage() {
         </Card>
 
         {/* Section 3: Item Details & Live GST Table */}
-        <Card className="border-border/40 shadow-sm">
-          <CardHeader className="pb-4 bg-muted/5 border-b border-border/10 flex flex-row items-center justify-between">
+        <Card className="border-border/40 shadow-sm overflow-hidden border-primary/20">
+          <CardHeader className="p-4 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border-b border-border/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div>
               <div className="flex items-center gap-2">
-                <Badge className="bg-primary/10 text-primary border-primary/20 font-bold">3</Badge>
-                <CardTitle className="text-sm font-bold">Item Details & Live GST Table</CardTitle>
+                <Badge className="bg-primary text-primary-foreground font-bold">3</Badge>
+                <CardTitle className="text-base font-bold text-foreground flex items-center gap-2">
+                  Item Details &amp; Live GST Tax Engine
+                  <Badge variant="outline" className="text-[10px] font-mono border-primary/30 text-primary bg-background">
+                    CGST (6%) + SGST (6%)
+                  </Badge>
+                </CardTitle>
               </div>
-              <CardDescription className="text-xs mt-1">
-                Dynamic line items with real-time tax calculations.
+              <CardDescription className="text-xs text-muted-foreground mt-1">
+                Enter item yarn quality, bags count, weight, rate, and line remarks with real-time tax calculation.
               </CardDescription>
             </div>
             <Button
               type="button"
-              variant="outline"
+              variant="default"
               size="sm"
               onClick={() =>
                 append({
@@ -437,70 +475,86 @@ export default function NewPurchaseOrderPage() {
                   totalBagsOrdered: 1,
                   perBagWeightKg: 50,
                   ratePerKg: 0,
-                  gstPercent: 12
+                  cgstPercent: 6,
+                  sgstPercent: 6,
+                  itemRemarks: ""
                 })
               }
-              className="h-8 gap-1.5 cursor-pointer text-xs font-bold"
+              className="h-8 gap-1.5 cursor-pointer text-xs font-bold bg-primary text-primary-foreground shadow-xs"
             >
               <Plus className="h-3.5 w-3.5" /> Add Item Row
             </Button>
           </CardHeader>
 
-          <CardContent className="pt-4 p-0">
+          <CardContent className="p-0">
             <div className="overflow-x-auto">
-              <Table className="min-w-[1050px]">
+              <Table className="min-w-[1250px]">
                 <TableHeader className="bg-muted/20">
-                  <TableRow className="text-xs">
-                    <TableHead className="w-[240px] font-bold">Item Name / Quality</TableHead>
-                    <TableHead className="w-[100px] font-bold text-center">Qty (Bags)</TableHead>
-                    <TableHead className="w-[110px] font-bold text-center">Weight (Kg)</TableHead>
-                    <TableHead className="w-[120px] font-bold text-right">Rate (₹/Kg)</TableHead>
-                    <TableHead className="w-[130px] font-bold text-right">Amount (₹)</TableHead>
-                    <TableHead className="w-[100px] font-bold text-center">GST %</TableHead>
-                    <TableHead className="w-[120px] font-bold text-right">GST Amount (₹)</TableHead>
-                    <TableHead className="w-[140px] font-bold text-right">Total (₹)</TableHead>
-                    <TableHead className="w-[80px] font-bold text-center">Actions</TableHead>
+                  <TableRow className="text-xs font-bold">
+                    <TableHead className="w-[220px]">Item Name / Quality</TableHead>
+                    <TableHead className="w-[90px] text-center">Bags Qty</TableHead>
+                    <TableHead className="w-[95px] text-center">Kg / Bag</TableHead>
+                    <TableHead className="w-[100px] text-center">Total Net Wt</TableHead>
+                    <TableHead className="w-[110px] text-right">Rate (₹/Kg)</TableHead>
+                    <TableHead className="w-[120px] text-right">Gross Subtotal (₹)</TableHead>
+                    <TableHead className="w-[85px] text-center">CGST %</TableHead>
+                    <TableHead className="w-[85px] text-center">SGST %</TableHead>
+                    <TableHead className="w-[110px] text-right">Tax (₹)</TableHead>
+                    <TableHead className="w-[130px] text-right">Net Payable (₹)</TableHead>
+                    <TableHead className="w-[170px]">Line Remarks / Specs</TableHead>
+                    <TableHead className="w-[60px] text-center">Action</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {fields.map((field, index) => {
                     const calc = rowCalculations[index] || {
                       totalWeightKg: 0,
-                      amount: 0,
-                      gstPercent: 0,
-                      gstAmount: 0,
-                      rowTotal: 0
+                      grossAmount: 0,
+                      cgstPercent: 6,
+                      sgstPercent: 6,
+                      totalGstPercent: 12,
+                      cgstAmount: 0,
+                      sgstAmount: 0,
+                      totalTaxAmount: 0,
+                      netPayable: 0
                     };
 
                     return (
-                      <TableRow key={field.id} className="text-xs hover:bg-muted/10">
+                      <TableRow key={field.id} className="text-xs hover:bg-muted/10 transition-colors">
                         {/* Item Name */}
                         <TableCell className="p-2">
                           <Input
                             {...form.register(`items.${index}.itemName`)}
                             placeholder={materialType === "Tana" ? "e.g. 40s Warp Yarn" : "e.g. 2/40s PC Weft"}
-                            className="h-8 text-xs font-medium"
+                            className="h-8 text-xs font-semibold bg-background"
                           />
                         </TableCell>
 
-                        {/* Qty */}
+                        {/* Qty Bags */}
                         <TableCell className="p-2">
                           <Input
                             type="number"
                             {...form.register(`items.${index}.totalBagsOrdered`, { valueAsNumber: true })}
-                            className="h-8 text-xs text-center font-bold"
+                            className="h-8 text-xs text-center font-bold font-mono bg-background"
                           />
                         </TableCell>
 
-                        {/* Weight */}
+                        {/* Weight per Bag */}
                         <TableCell className="p-2">
                           <Input
                             type="number"
                             step="0.1"
                             {...form.register(`items.${index}.perBagWeightKg`, { valueAsNumber: true })}
-                            className="h-8 text-xs text-center"
+                            className="h-8 text-xs text-center font-mono bg-background"
                             placeholder="50"
                           />
+                        </TableCell>
+
+                        {/* Computed Net Weight */}
+                        <TableCell className="p-2 text-center">
+                          <Badge variant="secondary" className="px-2 py-0.5 font-mono text-[11px] font-bold text-foreground">
+                            {calc.totalWeightKg.toLocaleString()} KG
+                          </Badge>
                         </TableCell>
 
                         {/* Rate */}
@@ -509,38 +563,63 @@ export default function NewPurchaseOrderPage() {
                             type="number"
                             step="0.01"
                             {...form.register(`items.${index}.ratePerKg`, { valueAsNumber: true })}
-                            className="h-8 text-xs text-right font-mono font-bold"
+                            className="h-8 text-xs text-right font-mono font-bold text-primary bg-background"
                             placeholder="280.00"
                           />
                         </TableCell>
 
-                        {/* Amount */}
-                        <TableCell className="p-2 text-right font-mono font-semibold text-foreground">
-                          ₹{calc.amount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        {/* Gross Subtotal */}
+                        <TableCell className="p-2 text-right font-mono font-bold text-foreground">
+                          ₹{calc.grossAmount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </TableCell>
 
-                        {/* GST % */}
+                        {/* CGST % */}
                         <TableCell className="p-2">
                           <Input
                             type="number"
-                            step="1"
-                            {...form.register(`items.${index}.gstPercent`, { valueAsNumber: true })}
-                            className="h-8 text-xs text-center"
-                            placeholder="12"
+                            step="0.5"
+                            {...form.register(`items.${index}.cgstPercent`, { valueAsNumber: true })}
+                            className="h-8 text-xs text-center font-mono font-bold text-blue-600 bg-blue-50/30 border-blue-200"
+                            placeholder="6"
                           />
                         </TableCell>
 
-                        {/* GST Amount */}
-                        <TableCell className="p-2 text-right font-mono font-medium text-muted-foreground">
-                          ₹{calc.gstAmount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        {/* SGST % */}
+                        <TableCell className="p-2">
+                          <Input
+                            type="number"
+                            step="0.5"
+                            {...form.register(`items.${index}.sgstPercent`, { valueAsNumber: true })}
+                            className="h-8 text-xs text-center font-mono font-bold text-emerald-600 bg-emerald-50/30 border-emerald-200"
+                            placeholder="6"
+                          />
                         </TableCell>
 
-                        {/* Total */}
-                        <TableCell className="p-2 text-right font-mono font-bold text-primary">
-                          ₹{calc.rowTotal.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        {/* Tax Amount (CGST + SGST) */}
+                        <TableCell className="p-2 text-right font-mono">
+                          <span className="block text-[11px] font-bold text-foreground">
+                            ₹{calc.totalTaxAmount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </span>
+                          <span className="block text-[9px] text-muted-foreground font-sans">
+                            ({calc.totalGstPercent}%)
+                          </span>
                         </TableCell>
 
-                        {/* Actions (Always Visible) */}
+                        {/* Total Net */}
+                        <TableCell className="p-2 text-right font-mono font-bold text-sm text-primary">
+                          ₹{calc.netPayable.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </TableCell>
+
+                        {/* Item Remarks / Notes */}
+                        <TableCell className="p-2">
+                          <Input
+                            {...form.register(`items.${index}.itemRemarks`)}
+                            placeholder="e.g. Raw White, Semi-Dull..."
+                            className="h-8 text-xs bg-background"
+                          />
+                        </TableCell>
+
+                        {/* Delete Action */}
                         <TableCell className="p-2 text-center">
                           <Button
                             type="button"
@@ -561,34 +640,79 @@ export default function NewPurchaseOrderPage() {
               </Table>
             </div>
 
-            {/* Calculations Summary Bar */}
-            <div className="p-4 bg-muted/15 border-t border-border/20 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-              <div className="text-xs text-muted-foreground">
-                <span className="font-semibold text-foreground">Total Bags:</span> {grandTotals.totalQty} Bags |{" "}
-                <span className="font-semibold text-foreground">Total Weight:</span> {grandTotals.totalWeight.toLocaleString()} KG
+            {/* STRUCTURED TAX & FINANCIAL SUMMARY GRID */}
+            <div className="p-4 bg-muted/15 border-t border-border/20 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="p-3 bg-card rounded-xl border border-border/30">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
+                  Total Bags &amp; Net Weight
+                </span>
+                <p className="text-base font-bold font-mono mt-1 text-foreground">
+                  {grandTotals.totalQty} Bags ({grandTotals.totalWeight.toLocaleString()} KG)
+                </p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">Physical Goods Total</p>
               </div>
 
-              <div className="flex flex-col text-right gap-1 self-end sm:self-auto">
-                <div className="text-xs text-muted-foreground">
-                  Subtotal: <span className="font-semibold text-foreground">₹{grandTotals.subtotalAmount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span> | Total GST: <span className="font-semibold text-foreground">₹{grandTotals.totalGstAmount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+              <div className="p-3 bg-card rounded-xl border border-border/30">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
+                  Gross Taxable Subtotal
+                </span>
+                <p className="text-base font-bold font-mono mt-1 text-foreground">
+                  ₹{grandTotals.subtotalAmount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">Before GST Taxes</p>
+              </div>
+
+              <div className="p-3 bg-card rounded-xl border border-border/30 space-y-1">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
+                  CGST &amp; SGST Tax Breakdown
+                </span>
+                <div className="flex justify-between items-center text-xs font-mono">
+                  <span className="text-blue-600 font-bold">CGST (6%):</span>
+                  <span className="font-bold text-foreground">₹{grandTotals.totalCgstAmount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
                 </div>
-                <div className="text-base font-bold text-primary">
-                  Grand Total: ₹{grandTotals.grandTotal.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                <div className="flex justify-between items-center text-xs font-mono">
+                  <span className="text-emerald-600 font-bold">SGST (6%):</span>
+                  <span className="font-bold text-foreground">₹{grandTotals.totalSgstAmount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
                 </div>
-                <div className="text-[10px] text-muted-foreground italic">
+              </div>
+
+              <div className="p-3 bg-primary/10 rounded-xl border border-primary/30">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-primary block">
+                  Grand Total Net Payable
+                </span>
+                <p className="text-lg font-bold font-mono text-primary mt-1">
+                  ₹{grandTotals.grandTotal.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </p>
+                <p className="text-[10px] text-muted-foreground italic truncate mt-0.5 font-medium">
                   {numberToWords(Math.round(grandTotals.grandTotal))}
-                </div>
+                </p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Section 4: Single Action Bar */}
+        {/* Remarks Card & Submit */}
+        <Card className="border-border/40 shadow-sm">
+          <CardHeader className="pb-3 bg-muted/5 border-b border-border/10">
+            <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+              Master Order Remarks &amp; Terms
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-3">
+            <Textarea
+              {...form.register("remarks")}
+              placeholder="Enter overall PO terms, transport remarks, or yarn quality directives..."
+              className="h-20 text-xs"
+            />
+          </CardContent>
+        </Card>
+
+        {/* Action Bar */}
         <div className="flex justify-end gap-3 pt-2">
           <Button type="button" variant="outline" onClick={() => router.back()} className="h-9 cursor-pointer">
             Cancel
           </Button>
-          <Button type="submit" disabled={isSubmitting} className="h-9 px-8 cursor-pointer font-bold text-sm">
+          <Button type="submit" disabled={isSubmitting} className="h-9 px-8 cursor-pointer font-bold text-sm bg-primary">
             {isSubmitting ? "Submitting Purchase Order..." : "Submit Purchase Order"}
           </Button>
         </div>

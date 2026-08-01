@@ -329,11 +329,33 @@ const getInitialSeeds = () => {
       email: "bhushan@dhandaitextiles.com",
       activeStatus: "Active",
       notes: "Secondary rapier weaving shed — 12 looms operational"
+    },
+    {
+      id: "FAC-ID-003",
+      factoryId: "FAC-003",
+      factoryName: "Lalit Textiles Weaving Unit",
+      ownerName: "Lalit Patil",
+      plotNo: "Plot No. 45",
+      addressLine1: "Powerloom Park, Kolhapur Road",
+      cityVillage: "Ichalkaranji",
+      taluka: "Shirol",
+      district: "Kolhapur",
+      state: "Maharashtra",
+      pincode: "416115",
+      shedLength: 100,
+      shedWidth: 50,
+      totalArea: 5000,
+      shedType: "RCC",
+      noOfFloors: 1,
+      contactNumber: "+91 99220 88990",
+      email: "lalit@lalittextiles.com",
+      activeStatus: "Active",
+      notes: "Lalit Textiles high-speed rapier and powerloom weaving unit — 12 looms operational"
     }
   ];
 
-  // Generate 36 Power Looms (24 in Main Shed, 12 in Unit-II)
-  const seededLooms: Loom[] = Array.from({ length: 36 }, (_, i) => {
+  // Generate 48 Looms total (24 in Dhandai Main Shed, 12 in Dhandai Unit-II, 12 in Lalit Textiles)
+  const dhandaiLooms: Loom[] = Array.from({ length: 36 }, (_, i) => {
     const loomNum = i + 1;
     const isMainShed = loomNum <= 24;
     return {
@@ -351,6 +373,26 @@ const getInitialSeeds = () => {
       status: loomNum % 12 === 0 ? "Under Repair" : "Active"
     };
   });
+
+  const lalitLooms: Loom[] = Array.from({ length: 12 }, (_, i) => {
+    const loomNum = i + 1;
+    return {
+      id: `LOM-LALIT-${String(loomNum).padStart(3, "0")}`,
+      loomId: `LOM-LT-${String(loomNum).padStart(3, "0")}`,
+      factoryId: "FAC-ID-003",
+      factoryName: "Lalit Textiles Weaving Unit",
+      loomNumber: `LALIT-L-${String(loomNum).padStart(3, "0")}`,
+      loomType: loomNum % 2 === 0 ? "Rapier" : "Power Loom",
+      reedCount: 132,
+      widthInches: 64,
+      rpmSpeed: 720,
+      makeBrand: "Tsudakoma",
+      yearOfPurchase: 2023,
+      status: "Active"
+    };
+  });
+
+  const seededLooms: Loom[] = [...dhandaiLooms, ...lalitLooms];
 
   const seededFabrics: Fabric[] = [
     {

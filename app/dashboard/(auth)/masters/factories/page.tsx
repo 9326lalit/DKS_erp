@@ -8,7 +8,7 @@ import * as z from "zod";
 import { toast } from "sonner";
 import { Factory, Trash2, Plus, ArrowLeft, Building2, MapPin, Zap, Ruler } from "lucide-react";
 import { useRouter } from "next/navigation";
-
+import Link from "next/link";
 import { mastersApiService } from "@/lib/services/masters-api";
 import { Factory as FactoryType } from "@/lib/store/use-masters-store";
 import { PageContainer } from "@/components/textile-erp/page-container";
@@ -213,9 +213,26 @@ export default function FactoriesPage() {
   });
 
   const columns: TableColumn<FactoryType>[] = [
-    { key: "createdDate", header: "Created Date", render: (item) => <span className="font-mono text-xs text-muted-foreground">{item.createdDate || item.establishmentDate || "25 Jul 2026"}</span>, sortable: true },
-    { key: "factoryId", header: "Factory ID", sortable: true },
-    { key: "factoryName", header: "Factory Name", sortable: true },
+    {
+      key: "factoryId",
+      header: "Factory ID",
+      sortable: true,
+      render: (item) => (
+        <Link href={`/dashboard/masters/factories/${encodeURIComponent(item.id)}`} className="font-mono text-xs font-bold text-primary hover:underline">
+          {item.factoryId}
+        </Link>
+      )
+    },
+    {
+      key: "factoryName",
+      header: "Factory Name",
+      sortable: true,
+      render: (item) => (
+        <Link href={`/dashboard/masters/factories/${encodeURIComponent(item.id)}`} className="font-bold text-xs text-foreground hover:text-primary hover:underline">
+          {item.factoryName}
+        </Link>
+      )
+    },
     { key: "ownerName", header: "Owner Name", sortable: true },
     { key: "cityVillage", header: "City/Village", sortable: true },
     {
@@ -236,6 +253,7 @@ export default function FactoriesPage() {
       sortable: true
     },
     { key: "contactNumber", header: "Contact" },
+    { key: "createdDate", header: "Created Date", render: (item) => <span className="font-mono text-xs text-muted-foreground">{item.createdDate || item.establishmentDate || "25 Jul 2026"}</span>, sortable: true },
     {
       key: "activeStatus",
       header: "Status",

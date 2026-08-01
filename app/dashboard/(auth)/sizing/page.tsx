@@ -1,18 +1,21 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { toast } from "sonner";
+import { MasterToolbar } from "@/components/textile-erp/master-toolbar";
+import { MasterTable, TableColumn } from "@/components/textile-erp/master-table";
 import {
-  Plus, CheckCircle, PackageCheck, Scissors, Search, Filter,
-  Layers, Warehouse, Truck, RefreshCw, Calculator, ShieldCheck,
-  FileDown, ChevronDown, ChevronUp
+  Plus, FileDown, ChevronDown, ChevronUp, Scissors, Building2, ExternalLink, Sparkles,
+  Warehouse, Truck, CheckCircle2, Clock, AlertTriangle, Layers
 } from "lucide-react";
-
-import { useSizingStore, OpeningStockEntry, FactoryReceivingEntry, PipeItem } from "@/lib/store/use-sizing-store";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useSizingStore, SizingBatch, OpeningStockEntry, FactoryReceivingEntry } from "@/lib/store/use-sizing-store";
 import { mastersApiService } from "@/lib/services/masters-api";
 import { tanaApiService } from "@/lib/services/tana-api";
 import { PageContainer } from "@/components/textile-erp/page-container";
@@ -21,7 +24,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -94,6 +96,8 @@ const productionSchema = z.object({
   bhimCount: z.number().min(1, "Bhim count required"),
   cutPerBhim: z.number().min(1, "Cut per Bhim required"),
   ratePerKg: z.number().min(0.1, "Rate per kg required"),
+  cgstPercent: z.number(),
+  sgstPercent: z.number(),
   remarks: z.string().optional()
 });
 
@@ -108,12 +112,35 @@ const factoryReceivingSchema = z.object({
   remarks: z.string().optional()
 });
 
+const millSchema = z.object({
+  millName: z.string().min(2, "Mill name is required"),
+  contactPerson: z.string().optional(),
+  mobileNumber: z.string().min(10, "10-digit mobile required"),
+  address: z.string().min(2, "Address required"),
+  activeStatus: z.enum(["Active", "Inactive"])
+});
+
 type OpeningStockValues = z.infer<typeof openingStockSchema>;
 type ProductionValues = z.infer<typeof productionSchema>;
 type FactoryReceivingValues = z.infer<typeof factoryReceivingSchema>;
+type MillFormValues = z.infer<typeof millSchema>;
 
 export default function SizingPage() {
-  const [activeTab, setActiveTab] = useState("overview");
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const [activeTab, setActiveTab] = useState("production");
+  const [millModalOpen, setMillModalOpen] = useState(false);
+
+  const millForm = useForm<MillFormValues>({
+    resolver: zodResolver(millSchema),
+    defaultValues: {
+      millName: "",
+      contactPerson: "",
+      mobileNumber: "",
+      address: "",
+      activeStatus: "Active"
+    }
+  });
 
   // Zustand Store
   const {
@@ -135,10 +162,215 @@ export default function SizingPage() {
   const { data: parties = [] } = useQuery({ queryKey: ["parties"], queryFn: () => mastersApiService.getParties() });
   const { data: pos = [] } = useQuery({ queryKey: ["tana-pos"], queryFn: () => tanaApiService.getPOs() });
 
+  const createMillMutation = useMutation({
+    mutationFn: (data: any) => mastersApiService.createSizingMill(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["sizingMills"] });
+      toast.success("Sizing Mill registered successfully!");
+      setMillModalOpen(false);
+      millForm.reset();
+    }
+  });
+
+  const handleMillSubmit = (values: MillFormValues) => {
+    const seq = sizingMills.length + 1;
+    const year = new Date().getFullYear();
+    createMillMutation.mutate({
+      id: `SZM-ID-${Date.now()}`,
+      millCode: `SZM-${year}-${String(seq).padStart(4, "0")}`,
+      createdDate: new Date().toISOString().split("T")[0],
+      ...values
+    });
+  };
+
   // Dialog States
   const [openingModalOpen, setOpeningModalOpen] = useState(false);
   const [productionModalOpen, setProductionModalOpen] = useState(false);
   const [receivingModalOpen, setReceivingModalOpen] = useState(false);
+
+  // Factory Receiving Search & Filters
+  const [rcvSearchValue, setRcvSearchValue] = useState("");
+  const [rcvFilters, setRcvFilters] = useState<Record<string, string>>({ status: "all" });
+
+  const filteredFactoryReceivings = factoryReceivings.filter((rcv) => {
+    const ms =
+      rcv.sizingName.toLowerCase().includes(rcvSearchValue.toLowerCase()) ||
+      rcv.poNumber.toLowerCase().includes(rcvSearchValue.toLowerCase()) ||
+      rcv.setNumber.toLowerCase().includes(rcvSearchValue.toLowerCase()) ||
+      (rcv.remarks || "").toLowerCase().includes(rcvSearchValue.toLowerCase());
+    const mst = rcvFilters.status === "all" || rcv.status === rcvFilters.status;
+    return ms && mst;
+  });
+
+  const receivingColumns: TableColumn<FactoryReceivingEntry>[] = [
+    { key: "date", header: "Date", sortable: true },
+    { key: "sizingName", header: "Sizing Mill Name", sortable: true, render: (r) => <span className="font-semibold">{r.sizingName}</span> },
+    {
+      key: "poNumber",
+      header: "PO Number",
+      sortable: true,
+      render: (r) => (
+        <Link href="/dashboard/tana/purchase-orders" className="font-mono text-xs font-bold text-primary hover:underline">
+          {r.poNumber}
+        </Link>
+      )
+    },
+    {
+      key: "setNumber",
+      header: "Set Number",
+      sortable: true,
+      render: (r) => (
+        <Link href={`/dashboard/masters/open-stock/${encodeURIComponent(r.setNumber)}`} className="font-mono text-xs font-bold text-primary hover:underline">
+          {r.setNumber}
+        </Link>
+      )
+    },
+    {
+      key: "bhimReceived",
+      header: "Bhim Received",
+      sortable: true,
+      render: (r) => <span className="font-bold text-xs">{r.bhimReceived} Bhim</span>
+    },
+    {
+      key: "pipesReceived",
+      header: "Pipes Received",
+      sortable: true,
+      render: (r) => <span className="font-bold text-xs font-mono">{r.pipesReceived} Pipes</span>
+    },
+    {
+      key: "remarks",
+      header: "Remarks",
+      render: (r) => <span className="text-xs text-muted-foreground">{r.remarks || "—"}</span>
+    },
+    {
+      key: "status",
+      header: "Status",
+      sortable: true,
+      render: (r) => (
+        <Badge
+          variant="outline"
+          className={
+            r.status === "Received"
+              ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 font-bold text-[10px]"
+              : r.status === "Partial"
+                ? "bg-amber-500/10 text-amber-600 border-amber-500/20 font-bold text-[10px]"
+                : "bg-red-500/10 text-red-600 border-red-500/20 font-bold text-[10px]"
+          }
+        >
+          {r.status}
+        </Badge>
+      )
+    }
+  ];
+
+  // Tab 1 Production Search & Filters
+  const [prodSearchValue, setProdSearchValue] = useState("");
+  const [prodFilters, setProdFilters] = useState<Record<string, string>>({ status: "all" });
+
+  const filteredBatches = batches.filter((b) => {
+    const ms =
+      b.batchNumber.toLowerCase().includes(prodSearchValue.toLowerCase()) ||
+      (b.outsourcedPartyName || "").toLowerCase().includes(prodSearchValue.toLowerCase()) ||
+      (b.remarks || "").toLowerCase().includes(prodSearchValue.toLowerCase());
+    const mst = prodFilters.status === "all" || b.status === prodFilters.status;
+    return ms && mst;
+  });
+
+  const productionColumns: TableColumn<SizingBatch>[] = [
+    {
+      key: "batchNumber",
+      header: "Batch #",
+      sortable: true,
+      render: (b) => (
+        <Link href={`/dashboard/sizing/${b.id}`} className="font-mono font-bold text-primary hover:underline">
+          {b.batchNumber}
+        </Link>
+      )
+    },
+    { key: "dateIssuedToSizing", header: "Date", sortable: true },
+    { key: "outsourcedPartyName", header: "Sizing Unit", sortable: true, render: (b) => <span className="font-semibold">{b.outsourcedPartyName || "In-house Mill"}</span> },
+    { key: "bagsIssued", header: "Bags / Weight", render: (b) => <span>{b.bagsIssued} Bags / {b.weightIssuedKg} KG</span> },
+    { key: "bhimCount", header: "Bhim × Cuts/Bhim", render: (b) => <span className="font-mono">{b.bhimCount || 11} Bhim × {b.cutPerBhim || 15}</span> },
+    { key: "totalCuts", header: "Total Cuts", sortable: true, render: (b) => <span className="font-bold text-foreground">{b.totalCuts || (b.bhimCount * b.cutPerBhim) || 165}</span> },
+    { key: "ratePerKg", header: "Rate (₹/kg)", render: (b) => <span className="font-mono">₹{b.ratePerKg || 5}/kg</span> },
+    { key: "sizingChargesRs", header: "Total Charge (₹)", sortable: true, render: (b) => <span className="font-bold font-mono text-emerald-600">₹{(b.sizingChargesRs || (b.materialUsedKg * (b.ratePerKg || 5))).toLocaleString("en-IN")}</span> },
+    {
+      key: "status",
+      header: "Status",
+      sortable: true,
+      render: (b) => <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20">{b.status}</Badge>
+    },
+    {
+      key: "id",
+      header: "Action Page",
+      render: (b) => (
+        <Button asChild variant="ghost" size="sm" className="h-7 text-xs gap-1 text-primary cursor-pointer">
+          <Link href={`/dashboard/sizing/${b.id}`}>
+            View Page
+          </Link>
+        </Button>
+      )
+    }
+  ];
+
+  // Tab 2 Opening Stock Search & Filters
+  const [opSearchValue, setOpSearchValue] = useState("");
+  const [opFilters, setOpFilters] = useState<Record<string, string>>({ owner: "all" });
+
+  const filteredOpeningStocks = openingStocks.filter((op) => {
+    const ms =
+      op.setNumber.toLowerCase().includes(opSearchValue.toLowerCase()) ||
+      op.sizingName.toLowerCase().includes(opSearchValue.toLowerCase()) ||
+      op.poNumber.toLowerCase().includes(opSearchValue.toLowerCase()) ||
+      op.materialOwner.toLowerCase().includes(opSearchValue.toLowerCase()) ||
+      op.itemName.toLowerCase().includes(opSearchValue.toLowerCase());
+    const mst = opFilters.owner === "all" || op.materialOwner === opFilters.owner;
+    return ms && mst;
+  });
+
+  const openingStockColumns: TableColumn<OpeningStockEntry>[] = [
+    { key: "date", header: "Date", sortable: true },
+    { key: "sizingName", header: "Sizing Name", sortable: true, render: (op) => <span className="font-semibold">{op.sizingName}</span> },
+    { key: "materialOwner", header: "Material Owner", sortable: true, render: (op) => <Badge variant="outline" className="bg-blue-500/10 text-blue-600 font-bold">{op.materialOwner}</Badge> },
+    {
+      key: "poNumber",
+      header: "PO Number",
+      sortable: true,
+      render: (op) => (
+        <Link href="/dashboard/tana/purchase-orders" className="font-mono text-xs font-bold text-primary hover:underline">
+          {op.poNumber}
+        </Link>
+      )
+    },
+    {
+      key: "setNumber",
+      header: "Set # / Item",
+      sortable: true,
+      render: (op) => (
+        <span>
+          <Link href={`/dashboard/sizing/${encodeURIComponent(op.id)}`} className="text-primary font-bold hover:underline font-mono">
+            {op.setNumber}
+          </Link>{" "}
+          <span className="text-muted-foreground text-xs">({op.itemName})</span>
+        </span>
+      )
+    },
+    { key: "totalBags", header: "Bags / Weight", render: (op) => <span>{op.totalBags} Bags / {op.totalWeightKg} KG</span> },
+    { key: "totalTaar", header: "Taar & Pipes", render: (op) => <span className="font-mono">{op.totalTaar} Taar | {op.totalPipes} Pipes</span> },
+    { key: "materialUsedKg", header: "Material Used", render: (op) => <span className="font-mono">{op.materialUsedKg} KG</span> },
+    { key: "remainingStockKg", header: "Remaining Stock", sortable: true, render: (op) => <span className="font-bold font-mono text-emerald-600">{op.remainingStockKg} KG</span> },
+    {
+      key: "id",
+      header: "Pipes Breakdown Page",
+      render: (op) => (
+        <Button asChild variant="outline" size="sm" className="h-7 text-[11px] font-bold text-primary border-primary/30 hover:bg-primary/10 gap-1 cursor-pointer">
+          <Link href={`/dashboard/sizing/${encodeURIComponent(op.id)}`}>
+            Open Pipe Breakdown Page
+          </Link>
+        </Button>
+      )
+    }
+  ];
 
   // Pipe Breakdown Expand Drawer state
   const [expandedSetNumber, setExpandedSetNumber] = useState<string | null>(null);
@@ -180,6 +412,8 @@ export default function SizingPage() {
       bhimCount: 11,
       cutPerBhim: 15,
       ratePerKg: 5,
+      cgstPercent: 6,
+      sgstPercent: 6,
       remarks: ""
     }
   });
@@ -289,6 +523,20 @@ export default function SizingPage() {
   // ----------------------------------------------------
 
   const handleOpeningSubmit = (values: OpeningStockValues) => {
+    // Duplicate Set Number Check
+    const isDuplicateSet = openingStocks.some(
+      (s) => s.setNumber.trim().toLowerCase() === values.setNumber.trim().toLowerCase()
+    );
+
+    if (isDuplicateSet) {
+      toast.error(`Duplicate Set Number Error: Set '${values.setNumber}' already exists!`);
+      openingForm.setError("setNumber", {
+        type: "manual",
+        message: `Set Number '${values.setNumber}' already exists in Opening Stock Register.`
+      });
+      return;
+    }
+
     const entry: OpeningStockEntry = {
       id: `OP-STOCK-${Date.now()}`,
       date: values.date,
@@ -355,8 +603,7 @@ export default function SizingPage() {
     }
 
     toast.success(
-      `Production Entry saved! Batch: SZ-2026-${String(batches.length + 1).padStart(4, "0")} | Cuts: ${totalCuts} | Charge: ₹${sizingCharges.toLocaleString("en-IN")}${
-        linkedStock ? ` | Remaining Stock: ${Math.max(0, linkedStock.remainingStockKg - totalWeight)} KG` : ""
+      `Production Entry saved! Batch: SZ-2026-${String(batches.length + 1).padStart(4, "0")} | Cuts: ${totalCuts} | Charge: ₹${sizingCharges.toLocaleString("en-IN")}${linkedStock ? ` | Remaining Stock: ${Math.max(0, linkedStock.remainingStockKg - totalWeight)} KG` : ""
       }`
     );
     setProductionModalOpen(false);
@@ -436,11 +683,21 @@ export default function SizingPage() {
     <PageContainer>
       <PageHeader
         title="Sizing & Material Flow Module"
-        description="Auto-population via PO selection, entity dropdowns, live stock balances, and pipe breakdowns."
+        description="Auto-population via PO selection, entity dropdowns, live stock balances, sizing mills master, and pipe breakdowns."
         breadcrumbs={[
           { title: "Dashboard", href: "/dashboard/default" },
           { title: "Sizing Module" }
         ]}
+        actions={
+          <Button
+            asChild
+            className="h-9 gap-1.5 bg-primary cursor-pointer font-bold"
+          >
+            <Link href="/dashboard/masters/sizing-mills">
+              <Plus className="h-4 w-4" /> Add Sizing
+            </Link>
+          </Button>
+        }
       />
 
       {/* KPI Cards */}
@@ -490,206 +747,87 @@ export default function SizingPage() {
 
       {/* Main Tabs Layout */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="overview" className="cursor-pointer text-xs font-semibold">Overview & Stock</TabsTrigger>
-          <TabsTrigger value="production" className="cursor-pointer text-xs font-semibold">Sizing Production</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="production" className="cursor-pointer text-xs font-semibold">Sizing Production Log</TabsTrigger>
           <TabsTrigger value="opening-stock" className="cursor-pointer text-xs font-semibold">Opening Stock Form</TabsTrigger>
           <TabsTrigger value="factory-receiving" className="cursor-pointer text-xs font-semibold">Factory Receiving</TabsTrigger>
         </TabsList>
 
         {/* ---------------------------------------------------- */}
-        {/* TAB 1: OVERVIEW & STOCK TRACKING */}
-        {/* ---------------------------------------------------- */}
-        <TabsContent value="overview" className="space-y-4">
-          <Card className="border-border/40 shadow-sm">
-            <CardHeader className="pb-3 border-b border-border/10 flex flex-row items-center justify-between">
-              <div>
-                <CardTitle className="text-sm font-bold">Live Material Stock Tracking</CardTitle>
-                <CardDescription className="text-xs">
-                  Formula: Remaining Material Stock = Total Material Received - Material Used
-                </CardDescription>
-              </div>
-              <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 font-bold">Live Calculation</Badge>
-            </CardHeader>
-            <CardContent className="pt-4 space-y-4">
-              <div className="grid gap-4 sm:grid-cols-3 text-center">
-                <div className="p-4 rounded-lg bg-muted/20 border border-border/40">
-                  <p className="text-xs text-muted-foreground font-semibold">Total Material Received</p>
-                  <p className="text-xl font-bold text-foreground mt-1">{totalMaterialReceivedKg.toLocaleString()} KG</p>
-                </div>
-                <div className="p-4 rounded-lg bg-muted/20 border border-border/40">
-                  <p className="text-xs text-muted-foreground font-semibold">Material Used in Sizing</p>
-                  <p className="text-xl font-bold text-amber-600 mt-1">{totalMaterialUsedKg.toLocaleString()} KG</p>
-                </div>
-                <div className="p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
-                  <p className="text-xs text-emerald-700 font-semibold">Remaining Material Available</p>
-                  <p className="text-xl font-bold text-emerald-600 mt-1">{remainingStockKg.toLocaleString()} KG</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* ---------------------------------------------------- */}
-        {/* TAB 2: SIZING PRODUCTION MODULE */}
+        {/* TAB 1: SIZING PRODUCTION MODULE */}
         {/* ---------------------------------------------------- */}
         <TabsContent value="production" className="space-y-4">
           <Card className="border-border/40 shadow-sm">
-            <CardHeader className="pb-3 border-b border-border/10 flex flex-row justify-between items-center">
-              <div>
-                <CardTitle className="text-sm font-bold">Sizing Production Log</CardTitle>
-                <CardDescription className="text-xs">
-                  Automated Total Cuts (`Bhim × Cuts/Bhim`) and Sizing Charges (`Material Used × Rate/kg`).
-                </CardDescription>
-              </div>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={handleExportProduction} className="h-8 text-xs gap-1.5 cursor-pointer">
-                  <FileDown className="h-3.5 w-3.5" /> Download CSV
-                </Button>
-                <Button size="sm" onClick={() => setProductionModalOpen(true)} className="h-8 text-xs gap-1.5 cursor-pointer font-bold">
-                  <Plus className="h-3.5 w-3.5" /> New Production Entry
-                </Button>
-              </div>
+            <CardHeader className="pb-3 border-b border-border/10">
+              <CardTitle className="text-sm font-bold">Sizing Production Log</CardTitle>
+              <CardDescription className="text-xs">
+                Automated Total Cuts (`Bhim × Cuts/Bhim`) and Sizing Charges (`Material Used × Rate/kg`).
+              </CardDescription>
             </CardHeader>
-            <CardContent className="pt-4 p-0">
-              <Table>
-                <TableHeader className="bg-muted/20">
-                  <TableRow className="text-xs font-bold">
-                    <TableHead>Batch #</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Sizing Unit</TableHead>
-                    <TableHead className="text-center">Bags / Weight</TableHead>
-                    <TableHead className="text-center">Bhim × Cuts/Bhim</TableHead>
-                    <TableHead className="text-center">Total Cuts</TableHead>
-                    <TableHead className="text-right">Sizing Rate (₹/kg)</TableHead>
-                    <TableHead className="text-right">Total Sizing Charge (₹)</TableHead>
-                    <TableHead className="text-center">Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {batches.map((b) => (
-                    <TableRow key={b.id} className="text-xs">
-                      <TableCell className="font-mono font-bold text-primary">{b.batchNumber}</TableCell>
-                      <TableCell>{b.dateIssuedToSizing}</TableCell>
-                      <TableCell className="font-semibold">{b.outsourcedPartyName || "In-house Mill"}</TableCell>
-                      <TableCell className="text-center">{b.bagsIssued} Bags / {b.weightIssuedKg} KG</TableCell>
-                      <TableCell className="text-center font-mono">{b.bhimCount || 11} Bhim × {b.cutPerBhim || 15}</TableCell>
-                      <TableCell className="text-center font-bold text-foreground">{b.totalCuts || (b.bhimCount * b.cutPerBhim) || 165}</TableCell>
-                      <TableCell className="text-right font-mono">₹{b.ratePerKg || 5}/kg</TableCell>
-                      <TableCell className="text-right font-bold font-mono text-emerald-600">
-                        ₹{(b.sizingChargesRs || (b.materialUsedKg * (b.ratePerKg || 5))).toLocaleString("en-IN")}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20">{b.status}</Badge>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+            <CardContent className="p-4 space-y-4">
+              <MasterToolbar
+                searchPlaceholder="Search Batch #, Sizing Unit, Remarks..."
+                searchValue={prodSearchValue}
+                onSearchChange={setProdSearchValue}
+                filters={[
+                  {
+                    key: "status",
+                    placeholder: "Filter by Status",
+                    options: [
+                      { label: "All Status", value: "all" },
+                      { label: "In Process", value: "In Process" },
+                      { label: "Completed", value: "Completed" }
+                    ]
+                  }
+                ]}
+                selectedFilters={prodFilters}
+                onFilterChange={(key, val) => setProdFilters((prev) => ({ ...prev, [key]: val }))}
+                onClearFilters={() => {
+                  setProdSearchValue("");
+                  setProdFilters({ status: "all" });
+                }}
+                createLabel="New Sizing Production Entry"
+                onCreateClick={() => router.push("/dashboard/sizing/new")}
+              />
+
+              <MasterTable
+                data={filteredBatches}
+                columns={productionColumns}
+              />
             </CardContent>
           </Card>
         </TabsContent>
 
         {/* ---------------------------------------------------- */}
-        {/* TAB 3: OPENING STOCK FORM & PIPES 1..N BREAKDOWN */}
+        {/* TAB 2: OPENING STOCK FORM & PIPES 1..N BREAKDOWN */}
         {/* ---------------------------------------------------- */}
         <TabsContent value="opening-stock" className="space-y-4">
           <Card className="border-border/40 shadow-sm">
-            <CardHeader className="pb-3 border-b border-border/10 flex flex-row justify-between items-center">
-              <div>
-                <CardTitle className="text-sm font-bold">Opening Stock Register & Pipe Breakdown</CardTitle>
-                <CardDescription className="text-xs">
-                  PO selection auto-populates item name, total bags, total weight, owner, and creates Pipes 1 to N automatically.
-                </CardDescription>
-              </div>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={handleExportOpeningStock} className="h-8 text-xs gap-1.5 cursor-pointer">
-                  <FileDown className="h-3.5 w-3.5" /> Download CSV
-                </Button>
-                <Button size="sm" onClick={() => setOpeningModalOpen(true)} className="h-8 text-xs gap-1.5 cursor-pointer font-bold">
-                  <Plus className="h-3.5 w-3.5" /> Entry Opening Stock Form
-                </Button>
-              </div>
+            <CardHeader className="pb-3 border-b border-border/10">
+              <CardTitle className="text-sm font-bold">Opening Stock Register & Pipe Breakdown</CardTitle>
+              <CardDescription className="text-xs">
+                PO selection auto-populates item name, total bags, total weight, owner, and creates Pipes 1 to N automatically.
+              </CardDescription>
             </CardHeader>
-            <CardContent className="pt-4 p-0">
-              <Table>
-                <TableHeader className="bg-muted/20">
-                  <TableRow className="text-xs font-bold">
-                    <TableHead></TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Sizing Name</TableHead>
-                    <TableHead>Material Owner (Konacha Maal)</TableHead>
-                    <TableHead>PO Number</TableHead>
-                    <TableHead>Set # / Item</TableHead>
-                    <TableHead className="text-center">Bags / Weight</TableHead>
-                    <TableHead className="text-center">Taar & Pipes</TableHead>
-                    <TableHead className="text-right">Material Used</TableHead>
-                    <TableHead className="text-right font-bold text-emerald-600">Remaining Stock</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {openingStocks.map((op) => {
-                    const isExpanded = expandedSetNumber === op.setNumber;
-                    const setPipes = pipes.filter((p) => p.setNumber === op.setNumber);
+            <CardContent className="p-4 space-y-4">
+              <MasterToolbar
+                searchPlaceholder="Search Set #, Sizing Name, PO #, Owner, Item..."
+                searchValue={opSearchValue}
+                onSearchChange={setOpSearchValue}
+                selectedFilters={opFilters}
+                onFilterChange={(key, val) => setOpFilters((prev) => ({ ...prev, [key]: val }))}
+                onClearFilters={() => {
+                  setOpSearchValue("");
+                  setOpFilters({ owner: "all" });
+                }}
+                createLabel="Entry Opening Stock Form"
+                onCreateClick={() => setOpeningModalOpen(true)}
+              />
 
-                    return (
-                      <React.Fragment key={op.id}>
-                        <TableRow className="text-xs hover:bg-muted/10">
-                          <TableCell className="w-8 text-center p-1">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setExpandedSetNumber(isExpanded ? null : op.setNumber)}
-                              className="h-6 w-6 p-0 cursor-pointer"
-                            >
-                              {isExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
-                            </Button>
-                          </TableCell>
-                          <TableCell>{op.date}</TableCell>
-                          <TableCell className="font-semibold">{op.sizingName}</TableCell>
-                          <TableCell><Badge variant="outline" className="bg-blue-500/10 text-blue-600">{op.materialOwner}</Badge></TableCell>
-                          <TableCell className="font-mono text-xs text-primary font-bold">{op.poNumber}</TableCell>
-                          <TableCell className="font-mono font-semibold">{op.setNumber} ({op.itemName})</TableCell>
-                          <TableCell className="text-center">{op.totalBags} Bags / {op.totalWeightKg} KG</TableCell>
-                          <TableCell className="text-center font-mono">{op.totalTaar} Taar | {op.totalPipes} Pipes</TableCell>
-                          <TableCell className="text-right font-mono">{op.materialUsedKg} KG</TableCell>
-                          <TableCell className="text-right font-bold font-mono text-emerald-600">{op.remainingStockKg} KG</TableCell>
-                        </TableRow>
-
-                        {/* Pipes 1 to N Detailed Breakdown Drawer */}
-                        {isExpanded && (
-                          <TableRow className="bg-muted/15 border-b border-border/30">
-                            <TableCell colSpan={10} className="p-4">
-                              <div className="bg-card rounded-lg border border-border/40 p-3 space-y-2">
-                                <div className="flex justify-between items-center">
-                                  <span className="text-xs font-bold text-foreground">
-                                    Pipes Breakdown for Set {op.setNumber} ({setPipes.length} Pipes)
-                                  </span>
-                                  <span className="text-[10px] text-muted-foreground font-mono">
-                                    Weight per Pipe: ~{op.weightPerPipeKg} KG | Total Set Weight: {op.totalSetWeightKg || (op.totalPipes * op.weightPerPipeKg)} KG
-                                  </span>
-                                </div>
-                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs pt-1">
-                                  {setPipes.map((p, idx) => (
-                                    <div key={p.id} className="p-2 rounded border border-border/40 bg-muted/20 flex flex-col gap-0.5">
-                                      <div className="flex justify-between font-bold">
-                                        <span className="font-mono text-primary">Pipe #{idx + 1}</span>
-                                        <span className="font-mono">{p.weightKg} KG</span>
-                                      </div>
-                                      <span className="text-[10px] text-muted-foreground truncate">{p.pipeNumber}</span>
-                                      <Badge variant="outline" className="text-[9px] w-fit mt-1">{p.status}</Badge>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        )}
-                      </React.Fragment>
-                    );
-                  })}
-                </TableBody>
-              </Table>
+              <MasterTable
+                data={filteredOpeningStocks}
+                columns={openingStockColumns}
+              />
             </CardContent>
           </Card>
         </TabsContent>
@@ -698,54 +836,48 @@ export default function SizingPage() {
         {/* TAB 4: FACTORY RECEIVING ENTRY */}
         {/* ---------------------------------------------------- */}
         <TabsContent value="factory-receiving" className="space-y-4">
+
           <Card className="border-border/40 shadow-sm">
-            <CardHeader className="pb-3 border-b border-border/10 flex flex-row justify-between items-center">
-              <div>
-                <CardTitle className="text-sm font-bold">Factory Receiving Entry Screen</CardTitle>
-                <CardDescription className="text-xs">
-                  Track returned Sized Sets from Sizing Mill to Factory (Bhim count, Pipes count, status & remarks).
-                </CardDescription>
-              </div>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={handleExportFactoryReceiving} className="h-8 text-xs gap-1.5 cursor-pointer">
-                  <FileDown className="h-3.5 w-3.5" /> Download CSV
-                </Button>
-                <Button size="sm" onClick={() => setReceivingModalOpen(true)} className="h-8 text-xs gap-1.5 cursor-pointer font-bold">
-                  <Plus className="h-3.5 w-3.5" /> Record Factory Receiving
-                </Button>
-              </div>
+            <CardHeader className="pb-3 border-b border-border/10">
+              <CardTitle className="text-sm font-bold flex items-center gap-2">
+                <Truck className="h-4 w-4 text-primary" />
+                Factory Receiving Log & Status Tracking
+              </CardTitle>
+              <CardDescription className="text-xs">
+                Track returned Sized Sets from Sizing Mill to Factory floor (Bhim count, Pipes count, status & remarks).
+              </CardDescription>
             </CardHeader>
-            <CardContent className="pt-4 p-0">
-              <Table>
-                <TableHeader className="bg-muted/20">
-                  <TableRow className="text-xs font-bold">
-                    <TableHead>Date</TableHead>
-                    <TableHead>Sizing Mill Name</TableHead>
-                    <TableHead>PO Number</TableHead>
-                    <TableHead>Set Number</TableHead>
-                    <TableHead className="text-center">Bhim Received</TableHead>
-                    <TableHead className="text-center">Pipes Received</TableHead>
-                    <TableHead>Remarks</TableHead>
-                    <TableHead className="text-center">Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {factoryReceivings.map((rcv) => (
-                    <TableRow key={rcv.id} className="text-xs">
-                      <TableCell>{rcv.date}</TableCell>
-                      <TableCell className="font-semibold">{rcv.sizingName}</TableCell>
-                      <TableCell className="font-mono text-xs font-bold text-primary">{rcv.poNumber}</TableCell>
-                      <TableCell className="font-mono font-bold text-foreground">{rcv.setNumber}</TableCell>
-                      <TableCell className="text-center font-bold">{rcv.bhimReceived} Bhim</TableCell>
-                      <TableCell className="text-center font-bold">{rcv.pipesReceived} Pipes</TableCell>
-                      <TableCell className="text-muted-foreground">{rcv.remarks || "—"}</TableCell>
-                      <TableCell className="text-center">
-                        <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20">{rcv.status}</Badge>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+            <CardContent className="p-4 space-y-4">
+              <MasterToolbar
+                searchPlaceholder="Search Date, Mill, PO #, Set #, Remarks..."
+                searchValue={rcvSearchValue}
+                onSearchChange={setRcvSearchValue}
+                filters={[
+                  {
+                    key: "status",
+                    placeholder: "Filter by Status",
+                    options: [
+                      { label: "All Status", value: "all" },
+                      { label: "Received", value: "Received" },
+                      { label: "Partial", value: "Partial" },
+                      { label: "Pending", value: "Pending" }
+                    ]
+                  }
+                ]}
+                selectedFilters={rcvFilters}
+                onFilterChange={(key, val) => setRcvFilters((prev) => ({ ...prev, [key]: val }))}
+                onClearFilters={() => {
+                  setRcvSearchValue("");
+                  setRcvFilters({ status: "all" });
+                }}
+                createLabel="Record Factory Receiving"
+                onCreateClick={() => router.push("/dashboard/sizing/receiving/new")}
+              />
+
+              <MasterTable
+                data={filteredFactoryReceivings}
+                columns={receivingColumns}
+              />
             </CardContent>
           </Card>
         </TabsContent>
@@ -768,7 +900,7 @@ export default function SizingPage() {
                 <Label className="text-xs font-semibold">Date *</Label>
                 <Input type="date" {...openingForm.register("date")} className="h-8 text-xs" />
               </div>
-              
+
               {/* Sizing Mill Selection Dropdown */}
               <div className="space-y-1">
                 <Label className="text-xs font-semibold">Sizing Name (Select Mill) *</Label>
@@ -903,23 +1035,25 @@ export default function SizingPage() {
       {/* DIALOG 2: SIZING PRODUCTION FORM */}
       {/* ---------------------------------------------------- */}
       <Dialog open={productionModalOpen} onOpenChange={setProductionModalOpen}>
-        <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-sm font-bold">New Sizing Production Entry</DialogTitle>
-            <DialogDescription className="text-xs">
-              Selecting a PO auto-fills Set Number, Bags &amp; Weight. Sizing Charge = Base Yarn Weight × Rate/kg.
+        <DialogContent className="sm:max-w-3xl md:max-w-4xl max-h-[92vh] overflow-y-auto">
+          <DialogHeader className="border-b border-border/20 pb-3">
+            <DialogTitle className="text-base font-bold text-foreground">New Sizing Production Entry</DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground">
+              Select PO or Set Number to auto-fill specs. Computes Bhim cuts, CGST &amp; SGST jobwork tax bill.
             </DialogDescription>
           </DialogHeader>
-          <form onSubmit={productionForm.handleSubmit(handleProductionSubmit)} className="space-y-4 pt-2">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
+
+          <form onSubmit={productionForm.handleSubmit(handleProductionSubmit)} className="space-y-5 pt-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
                 <Label className="text-xs font-semibold">Date *</Label>
-                <Input type="date" {...productionForm.register("date")} className="h-8 text-xs" />
+                <Input type="date" {...productionForm.register("date")} className="h-9 text-xs" />
               </div>
-              <div className="space-y-1">
+
+              <div className="space-y-1.5">
                 <Label className="text-xs font-semibold">Sizing Mill *</Label>
                 <Select onValueChange={(v) => productionForm.setValue("sizingName", v)} value={productionForm.watch("sizingName")}>
-                  <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Select sizing mill" /></SelectTrigger>
+                  <SelectTrigger className="h-9 text-xs truncate w-full"><SelectValue placeholder="Select sizing mill" className="truncate" /></SelectTrigger>
                   <SelectContent>
                     {sizingMills.map((m) => (
                       <SelectItem key={m.id} value={m.millName}>{m.millName}</SelectItem>
@@ -930,32 +1064,36 @@ export default function SizingPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <Label className="text-xs font-semibold text-primary">PO Number (Overrides Set #) *</Label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5 min-w-0">
+                <Label className="text-xs font-semibold text-primary">PO Number (Select to Auto-Fill) *</Label>
                 <Select onValueChange={handlePOSelectProduction} value={productionForm.watch("poNumber")}>
-                  <SelectTrigger className="h-8 text-xs font-mono border-primary/40"><SelectValue placeholder="Select PO #" /></SelectTrigger>
+                  <SelectTrigger className="h-9 text-xs font-mono border-primary/40 truncate w-full overflow-hidden">
+                    <SelectValue placeholder="Select PO #" className="truncate" />
+                  </SelectTrigger>
                   <SelectContent>
                     {pos.map((p) => {
                       const linked = openingStocks.find((s) => s.poNumber === p.poNumber);
                       return (
-                        <SelectItem key={p.id} value={p.poNumber}>
-                          {p.poNumber} — {p.itemName}
-                          {linked ? ` | ${linked.remainingStockKg} KG left` : ""}
+                        <SelectItem key={p.id} value={p.poNumber} className="text-xs">
+                          {p.poNumber} — {p.itemName} {linked ? `(${linked.remainingStockKg} KG left)` : ""}
                         </SelectItem>
                       );
                     })}
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-1">
+
+              <div className="space-y-1.5 min-w-0">
                 <Label className="text-xs font-semibold">Set Number (Auto from PO) *</Label>
                 <Select onValueChange={(v) => productionForm.setValue("setNumber", v)} value={productionForm.watch("setNumber")}>
-                  <SelectTrigger className="h-8 text-xs font-mono bg-muted/20"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="h-9 text-xs font-mono bg-muted/20 truncate w-full overflow-hidden">
+                    <SelectValue className="truncate" />
+                  </SelectTrigger>
                   <SelectContent>
                     {availableSetNumbers.length > 0 ? (
                       availableSetNumbers.map((s) => (
-                        <SelectItem key={s.setNumber} value={s.setNumber}>
+                        <SelectItem key={s.setNumber} value={s.setNumber} className="text-xs">
                           {s.setNumber} ({s.poNumber})
                         </SelectItem>
                       ))
@@ -971,94 +1109,101 @@ export default function SizingPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-3">
-              <div className="space-y-1">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="space-y-1.5">
                 <Label className="text-xs font-semibold">Bags Issued *</Label>
-                <Input type="number" {...productionForm.register("bagsIssued", { valueAsNumber: true })} className="h-8 text-xs" />
+                <Input type="number" {...productionForm.register("bagsIssued", { valueAsNumber: true })} className="h-9 text-xs" />
               </div>
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 <Label className="text-xs font-semibold">Per Bag Weight (Kg) *</Label>
-                <Input type="number" step="0.1" {...productionForm.register("weightPerBagKg", { valueAsNumber: true })} className="h-8 text-xs" />
+                <Input type="number" step="0.1" {...productionForm.register("weightPerBagKg", { valueAsNumber: true })} className="h-9 text-xs" />
               </div>
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 <Label className="text-xs font-semibold text-emerald-600">Chemical Added (Kg)</Label>
-                <Input type="number" step="0.1" {...productionForm.register("sizingChemicalAddedKg", { valueAsNumber: true })} className="h-8 text-xs font-bold border-emerald-500/30" placeholder="e.g. 25" />
+                <Input type="number" step="0.1" {...productionForm.register("sizingChemicalAddedKg", { valueAsNumber: true })} className="h-9 text-xs font-bold border-emerald-500/30" placeholder="e.g. 25" />
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <Label className="text-xs font-semibold">Bhim Count *</Label>
-                <Input type="number" {...productionForm.register("bhimCount", { valueAsNumber: true })} className="h-8 text-xs" placeholder="e.g. 11" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold">Bhim (Beam) Count *</Label>
+                <Input type="number" {...productionForm.register("bhimCount", { valueAsNumber: true })} className="h-9 text-xs" placeholder="e.g. 11" />
               </div>
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 <Label className="text-xs font-semibold">Cuts per Bhim *</Label>
-                <Input type="number" {...productionForm.register("cutPerBhim", { valueAsNumber: true })} className="h-8 text-xs" placeholder="e.g. 15" />
+                <Input type="number" {...productionForm.register("cutPerBhim", { valueAsNumber: true })} className="h-9 text-xs" placeholder="e.g. 15" />
               </div>
             </div>
 
-            <div className="space-y-1">
-              <Label className="text-xs font-semibold">Sizing Rate (₹ / Kg) *</Label>
-              <Input type="number" step="0.1" {...productionForm.register("ratePerKg", { valueAsNumber: true })} className="h-8 text-xs font-mono" placeholder="5.00" />
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold">Sizing Rate (₹ / Kg) *</Label>
+                <Input type="number" step="0.1" {...productionForm.register("ratePerKg", { valueAsNumber: true })} className="h-9 text-xs font-mono" placeholder="5.00" />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold">CGST (%)</Label>
+                <Input type="number" step="0.5" {...productionForm.register("cgstPercent", { valueAsNumber: true })} className="h-9 text-xs font-mono" />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold">SGST (%)</Label>
+                <Input type="number" step="0.5" {...productionForm.register("sgstPercent", { valueAsNumber: true })} className="h-9 text-xs font-mono" />
+              </div>
             </div>
 
             {/* Stock Availability Banner */}
             {prodLinkedStock && (
-              <div className={`p-2.5 rounded-lg border text-xs flex items-center justify-between ${
-                prodIsFullyConsumed
-                  ? "bg-red-50 border-red-300 dark:bg-red-950/30 dark:border-red-700"
-                  : prodIsOverIssuing
+              <div className={`p-3 rounded-xl border text-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 ${prodIsFullyConsumed
+                ? "bg-red-50 border-red-300 dark:bg-red-950/30 dark:border-red-700"
+                : prodIsOverIssuing
                   ? "bg-amber-50 border-amber-300 dark:bg-amber-950/30 dark:border-amber-700"
                   : "bg-emerald-50 border-emerald-300 dark:bg-emerald-950/30 dark:border-emerald-700"
-              }`}>
-                <span className={`font-semibold ${
-                  prodIsFullyConsumed ? "text-red-700 dark:text-red-400" :
-                  prodIsOverIssuing ? "text-amber-700 dark:text-amber-400" :
-                  "text-emerald-700 dark:text-emerald-400"
                 }`}>
+                <span className={`font-semibold ${prodIsFullyConsumed ? "text-red-700 dark:text-red-400" :
+                  prodIsOverIssuing ? "text-amber-700 dark:text-amber-400" :
+                    "text-emerald-700 dark:text-emerald-400"
+                  }`}>
                   {prodIsFullyConsumed
                     ? `⚠ Set ${prodLinkedStock.setNumber}: Fully Consumed — 0 KG remaining`
                     : prodIsOverIssuing
-                    ? `⚠ Set ${prodLinkedStock.setNumber}: Only ${prodLinkedStock.remainingStockKg} KG available (issuing ${prodTotalWeight} KG)`
-                    : `✓ Set ${prodLinkedStock.setNumber}: ${prodLinkedStock.remainingStockKg} KG available in stock`
+                      ? `⚠ Set ${prodLinkedStock.setNumber}: Only ${prodLinkedStock.remainingStockKg} KG available (issuing ${prodTotalWeight} KG)`
+                      : `✓ Set ${prodLinkedStock.setNumber}: ${prodLinkedStock.remainingStockKg} KG available in stock`
                   }
                 </span>
-                <span className="font-mono text-muted-foreground">
+                <span className="font-mono text-muted-foreground text-[11px]">
                   Total issued: {prodLinkedStock.totalWeightKg} KG | Used: {prodLinkedStock.materialUsedKg} KG
                 </span>
               </div>
             )}
 
-            {/* Calculated Summary Card */}
-            <div className="p-3 bg-muted/20 border border-border/40 rounded-lg space-y-1.5 text-xs">
+            {/* Calculated Summary Card with Tax Breakdown */}
+            <div className="p-4 bg-primary/5 border border-primary/20 rounded-xl space-y-2 text-xs">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Base Yarn Weight Issued:</span>
                 <span className="font-bold">{prodTotalWeight} KG</span>
               </div>
-              {prodChemicalAdded > 0 && (
-                <div className="flex justify-between text-emerald-600 font-bold">
-                  <span>Chemical / Extra Material Added:</span>
-                  <span>+{prodChemicalAdded} KG (Total on Beam: {prodGrandTotalWeight} KG)</span>
-                </div>
-              )}
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Total Calculated Cuts ({prodBhim} Bhim × {prodCuts} Cuts):</span>
-                <span className="font-bold text-foreground">{prodTotalCuts} Cuts</span>
+                <span className="font-bold text-purple-600">{prodBhim * prodCuts} Cuts</span>
               </div>
-              <div className="border-t border-border/40 pt-1.5 flex justify-between text-primary font-bold">
-                <span>Total Sizing Charge ({prodTotalWeight} KG × ₹{prodRate}/kg):</span>
-                <span>₹{prodSizingCharge.toLocaleString("en-IN")}</span>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Subtotal Jobwork Amount ({prodTotalWeight} KG × ₹{prodRate}/kg):</span>
+                <span className="font-bold font-mono">₹{(prodTotalWeight * prodRate).toLocaleString("en-IN")}</span>
               </div>
-              {prodChemicalAdded > 0 && (
-                <p className="text-[10px] text-muted-foreground italic">
-                  Note: Sizing charge is on base yarn weight only ({prodTotalWeight} KG), chemical ({prodChemicalAdded} KG) not charged.
-                </p>
-              )}
+              <div className="flex justify-between text-emerald-600 font-medium">
+                <span>CGST ({productionForm.watch("cgstPercent") || 6}%) + SGST ({productionForm.watch("sgstPercent") || 6}%):</span>
+                <span className="font-mono">₹{((prodTotalWeight * prodRate) * (((productionForm.watch("cgstPercent") || 6) + (productionForm.watch("sgstPercent") || 6)) / 100)).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
+              </div>
+              <div className="border-t border-border/40 pt-1.5 flex justify-between font-bold text-sm text-foreground">
+                <span>Grand Total Sizing Bill (with GST):</span>
+                <span className="text-primary font-mono text-base">
+                  ₹{((prodTotalWeight * prodRate) * (1 + ((productionForm.watch("cgstPercent") || 6) + (productionForm.watch("sgstPercent") || 6)) / 100)).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                </span>
+              </div>
             </div>
 
             <DialogFooter className="pt-2">
-              <Button type="button" variant="outline" onClick={() => setProductionModalOpen(false)} className="h-8 text-xs">Cancel</Button>
-              <Button type="submit" className="h-8 text-xs font-bold">Save Production Entry</Button>
+              <Button type="button" variant="outline" onClick={() => setProductionModalOpen(false)} className="h-9 text-xs">Cancel</Button>
+              <Button type="submit" className="h-9 text-xs font-bold bg-primary text-primary-foreground">Save Production Entry</Button>
             </DialogFooter>
           </form>
         </DialogContent>
@@ -1149,6 +1294,66 @@ export default function SizingPage() {
             <DialogFooter className="pt-2">
               <Button type="button" variant="outline" onClick={() => setReceivingModalOpen(false)} className="h-8 text-xs">Cancel</Button>
               <Button type="submit" className="h-8 text-xs font-bold">Save Factory Receiving</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* ---------------------------------------------------- */}
+      {/* DIALOG: QUICK REGISTER SIZING MILL */}
+      {/* ---------------------------------------------------- */}
+      <Dialog open={millModalOpen} onOpenChange={setMillModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-sm font-bold flex items-center gap-2">
+              <Scissors className="h-4 w-4 text-primary" /> Register New Sizing Mill
+            </DialogTitle>
+            <DialogDescription className="text-xs">
+              Register a new Warping &amp; Sizing Job-Work Mill or agency into Master Data.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={millForm.handleSubmit(handleMillSubmit)} className="space-y-3 pt-2">
+            <div className="space-y-1">
+              <Label className="text-xs font-semibold">Sizing Mill Name *</Label>
+              <Input {...millForm.register("millName")} placeholder="e.g. Sumit Sizing Works" className="h-8 text-xs font-semibold" />
+              {millForm.formState.errors.millName && <p className="text-[10px] text-destructive">{millForm.formState.errors.millName.message}</p>}
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs font-semibold">Contact Person</Label>
+                <Input {...millForm.register("contactPerson")} placeholder="e.g. Ramesh Bhai" className="h-8 text-xs" />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs font-semibold">Mobile Number *</Label>
+                <Input {...millForm.register("mobileNumber")} placeholder="e.g. 9876543210" className="h-8 text-xs font-mono" />
+                {millForm.formState.errors.mobileNumber && <p className="text-[10px] text-destructive">{millForm.formState.errors.mobileNumber.message}</p>}
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <Label className="text-xs font-semibold">Address *</Label>
+              <Input {...millForm.register("address")} placeholder="Mill address or Industrial Area..." className="h-8 text-xs" />
+              {millForm.formState.errors.address && <p className="text-[10px] text-destructive">{millForm.formState.errors.address.message}</p>}
+            </div>
+
+            <div className="space-y-1">
+              <Label className="text-xs font-semibold">Status *</Label>
+              <Select onValueChange={(v) => millForm.setValue("activeStatus", v as any)} value={millForm.watch("activeStatus")}>
+                <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Active">Active</SelectItem>
+                  <SelectItem value="Inactive">Inactive</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <DialogFooter className="pt-2">
+              <Button type="button" variant="outline" onClick={() => setMillModalOpen(false)} className="h-8 text-xs">Cancel</Button>
+              <Button type="submit" disabled={createMillMutation.isPending} className="h-8 text-xs font-bold bg-primary">
+                Save &amp; Register Sizing Mill
+              </Button>
             </DialogFooter>
           </form>
         </DialogContent>

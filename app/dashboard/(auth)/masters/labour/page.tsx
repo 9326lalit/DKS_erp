@@ -165,8 +165,26 @@ export default function LabourPage() {
   };
 
   const columns: TableColumn<Labour>[] = [
-    { key: "labourId", header: "Labour ID", sortable: true },
-    { key: "fullName", header: "Full Name", sortable: true },
+    {
+      key: "labourId",
+      header: "Labour ID",
+      sortable: true,
+      render: (item) => (
+        <button onClick={() => handleViewClick(item)} className="font-mono text-xs font-bold text-primary hover:underline text-left cursor-pointer">
+          {item.labourId}
+        </button>
+      )
+    },
+    {
+      key: "fullName",
+      header: "Full Name",
+      sortable: true,
+      render: (item) => (
+        <button onClick={() => handleViewClick(item)} className="font-bold text-xs text-foreground hover:text-primary hover:underline text-left cursor-pointer">
+          {item.fullName}
+        </button>
+      )
+    },
     { key: "labourType", header: "Role / Type", render: (item) => <Badge variant="outline" className={`text-[10px] font-bold ${labourTypeColors[item.labourType] || ""}`}>{item.labourType}</Badge>, sortable: true },
     { key: "linkedFactoryName", header: "Factory Unit", render: (item) => <span className="text-xs text-muted-foreground">{item.linkedFactoryName}</span>, sortable: true },
     {

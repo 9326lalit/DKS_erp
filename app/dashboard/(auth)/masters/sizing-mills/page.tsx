@@ -114,8 +114,26 @@ export default function SizingMillsPage() {
 
   const columns: TableColumn<SizingMill>[] = [
     { key: "createdDate", header: "Created Date", render: (m) => <span className="font-mono text-xs text-muted-foreground">{m.createdDate || "25 Jul 2026"}</span>, sortable: true },
-    { key: "millCode", header: "Mill Code", sortable: true, render: (m) => <span className="font-bold text-primary">{m.millCode}</span> },
-    { key: "millName", header: "Mill Name", sortable: true, render: (m) => <span className="font-bold">{m.millName}</span> },
+    {
+      key: "millCode",
+      header: "Mill Code",
+      sortable: true,
+      render: (m) => (
+        <button onClick={() => handleViewClick(m)} className="font-bold text-primary hover:underline text-left cursor-pointer">
+          {m.millCode}
+        </button>
+      )
+    },
+    {
+      key: "millName",
+      header: "Mill Name",
+      sortable: true,
+      render: (m) => (
+        <button onClick={() => handleViewClick(m)} className="font-bold text-foreground hover:text-primary hover:underline text-left cursor-pointer">
+          {m.millName}
+        </button>
+      )
+    },
     { key: "contactPerson", header: "Contact Person" },
     { key: "mobileNumber", header: "Mobile No." },
     { key: "activeStatus", header: "Status", sortable: true, render: (m) => <StatusBadge status={m.activeStatus} /> }

@@ -40,6 +40,7 @@ interface MasterTableProps<T> {
   isLoading?: boolean;
   customRowActions?: (item: T) => React.ReactNode;
   onBulkDelete?: (items: T[]) => void;
+  enableSelection?: boolean;
 }
 
 export function MasterTable<T extends { id: string; status?: string }>({
@@ -51,7 +52,8 @@ export function MasterTable<T extends { id: string; status?: string }>({
   onStatusToggle,
   isLoading = false,
   customRowActions,
-  onBulkDelete
+  onBulkDelete,
+  enableSelection = true
 }: MasterTableProps<T>) {
   const { t } = useLanguage();
 
@@ -136,25 +138,35 @@ export function MasterTable<T extends { id: string; status?: string }>({
     <div className="flex flex-col gap-4">
       {/* Bulk Action Header */}
       {selectedIds.size > 0 && (
-        <div className="flex items-center justify-between rounded-lg bg-accent/50 px-4 py-2 text-xs">
-          <span className="font-semibold text-accent-foreground">
-            {selectedIds.size} item(s) selected
+        <div className="flex items-center justify-between rounded-lg bg-primary/10 border border-primary/20 px-4 py-2 text-xs">
+          <span className="font-bold text-primary">
+            ✓ {selectedIds.size} row(s) selected
           </span>
-          {onBulkDelete && (
+          <div className="flex items-center gap-2">
             <Button
-              variant="destructive"
+              variant="outline"
               size="sm"
-              onClick={() => {
-                const selectedItems = data.filter((item) => selectedIds.has(item.id));
-                onBulkDelete(selectedItems);
-                setSelectedIds(new Set());
-              }}
-              className="h-7 text-xs cursor-pointer gap-1"
+              onClick={() => setSelectedIds(new Set())}
+              className="h-7 text-xs cursor-pointer"
             >
-              <Trash className="h-3 w-3" />
-              {t("delete", "Delete Selected")}
+              Clear Selection
             </Button>
-          )}
+            {onBulkDelete && (
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => {
+                  const selectedItems = data.filter((item) => selectedIds.has(item.id));
+                  onBulkDelete(selectedItems);
+                  setSelectedIds(new Set());
+                }}
+                className="h-7 text-xs cursor-pointer gap-1"
+              >
+                <Trash className="h-3 w-3" />
+                {t("delete", "Delete Selected")}
+              </Button>
+            )}
+          </div>
         </div>
       )}
 
@@ -163,7 +175,7 @@ export function MasterTable<T extends { id: string; status?: string }>({
         <Table className="min-w-[950px]">
           <TableHeader className="bg-muted/30">
             <TableRow>
-              {onBulkDelete && (
+              {enableSelection && (
                 <TableHead className="w-[40px]">
                   <Checkbox
                     checked={isAllSelected}
@@ -201,7 +213,7 @@ export function MasterTable<T extends { id: string; status?: string }>({
             {paginatedData.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={columns.length + (onBulkDelete ? 2 : 1)}
+                  colSpan={columns.length + (enableSelection ? 2 : 1)}
                   className="h-32 text-center text-xs text-muted-foreground"
                 >
                   {t("noDataFound", "No records found.")}
@@ -214,7 +226,7 @@ export function MasterTable<T extends { id: string; status?: string }>({
                   className="hover:bg-muted/20 transition-colors data-[state=selected]:bg-muted/30"
                   data-state={selectedIds.has(item.id) ? "selected" : undefined}
                 >
-                  {onBulkDelete && (
+                  {enableSelection && (
                     <TableCell className="py-3">
                       <Checkbox
                         checked={selectedIds.has(item.id)}
@@ -229,7 +241,7 @@ export function MasterTable<T extends { id: string; status?: string }>({
                       {col.render ? col.render(item) : (item as any)[col.key]}
                     </TableCell>
                   ))}
-                  
+
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-1">
                       {customRowActions && customRowActions(item)}
@@ -319,7 +331,7 @@ export function MasterTable<T extends { id: string; status?: string }>({
               </select>
             </div>
           </div>
-          
+
           <div className="flex items-center gap-1.5 self-end sm:self-auto">
             <Button
               variant="outline"
@@ -330,7 +342,7 @@ export function MasterTable<T extends { id: string; status?: string }>({
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            
+
             <div className="text-xs font-bold text-foreground px-3">
               Page {currentPage} of {totalPages}
             </div>

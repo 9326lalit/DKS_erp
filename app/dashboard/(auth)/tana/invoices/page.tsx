@@ -3,26 +3,29 @@
 import React, { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
+import { useRouter, usePathname } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { toast } from "sonner";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Eye, FileText, ShoppingBag, Layers } from "lucide-react";
 
 import { tanaApiService } from "@/lib/services/tana-api";
+import { banaApiService } from "@/lib/services/bana-api";
 import { TanaPI, numberToWords } from "@/lib/store/use-tana-store";
+import { BanaPI } from "@/lib/store/use-bana-store";
 import { PageContainer } from "@/components/textile-erp/page-container";
 import { PageHeader } from "@/components/textile-erp/page-header";
 import { MasterToolbar } from "@/components/textile-erp/master-toolbar";
 import { MasterTable, TableColumn } from "@/components/textile-erp/master-table";
 import { MasterDialog } from "@/components/textile-erp/master-dialog";
-import { DetailViewCard } from "@/components/textile-erp/detail-view-card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle
@@ -46,16 +49,38 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>;
 
-export default function TanaInvoicesPage() {
+export default function YarnPurchaseInvoicesPage() {
+  const router = useRouter();
+  const pathname = usePathname();
   const queryClient = useQueryClient();
+
+  const [activeTab, setActiveTab] = useState<"tana" | "bana">("tana");
   const [searchValue, setSearchValue] = useState("");
   const [selectedFilters, setSelectedFilters] = useState<Record<string, string>>({ paymentStatus: "all" });
-  const [viewPI, setViewPI] = useState<TanaPI | null>(null);
-  const [editPI, setEditPI] = useState<TanaPI | null>(null);
+  const [editPI, setEditPI] = useState<TanaPI | BanaPI | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-  const [deleteTarget, setDeleteTarget] = useState<TanaPI | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<TanaPI | BanaPI | null>(null);
 
-  const { data: invoices = [], isLoading } = useQuery({ queryKey: ["tana-pis"], queryFn: () => tanaApiService.getPIs() });
+  useEffect(() => {
+    if (pathname.includes("/bana")) {
+      setActiveTab("bana");
+    } else {
+      setActiveTab("tana");
+    }
+  }, [pathname]);
+
+  const { data: tanaPIs = [], isLoading: isTanaLoading } = useQuery({
+    queryKey: ["tana-pis"],
+    queryFn: () => tanaApiService.getPIs()
+  });
+
+  const { data: banaPIs = [], isLoading: isBanaLoading } = useQuery({
+    queryKey: ["bana-pis"],
+    queryFn: () => banaApiService.getPIs()
+  });
+
+  const isLoading = activeTab === "tana" ? isTanaLoading : isBanaLoading;
+  const invoices = activeTab === "tana" ? tanaPIs : banaPIs;
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -84,35 +109,60 @@ export default function TanaInvoicesPage() {
     }
   }, [editPI, form]);
 
-  const updateMutation = useMutation({
+  const updateTanaMutation = useMutation({
     mutationFn: (pi: TanaPI) => tanaApiService.updatePI(pi),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tana-pis"] });
       toast.success("Tana Purchase Invoice updated.");
       setEditPI(null);
-    },
-    onError: () => toast.error("Failed to update invoice.")
+    }
   });
 
-  const deleteMutation = useMutation({
+  const updateBanaMutation = useMutation({
+    mutationFn: (pi: BanaPI) => banaApiService.updatePI(pi),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["bana-pis"] });
+      toast.success("Bana Purchase Invoice updated.");
+      setEditPI(null);
+    }
+  });
+
+  const deleteTanaMutation = useMutation({
     mutationFn: (id: string) => tanaApiService.deletePI(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tana-pis"] });
       toast.success("Tana Purchase Invoice deleted.");
       setDeleteConfirmOpen(false);
       setDeleteTarget(null);
-    },
-    onError: () => toast.error("Failed to delete invoice.")
+    }
   });
 
-  const handleEditClick = (pi: TanaPI) => {
+  const deleteBanaMutation = useMutation({
+    mutationFn: (id: string) => banaApiService.deletePI(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["bana-pis"] });
+      toast.success("Bana Purchase Invoice deleted.");
+      setDeleteConfirmOpen(false);
+      setDeleteTarget(null);
+    }
+  });
+
+  const handleEditClick = (pi: TanaPI | BanaPI) => {
     setEditPI(pi);
-    setViewPI(null);
   };
 
-  const handleDeleteClick = (pi: TanaPI) => {
+  const handleDeleteClick = (pi: TanaPI | BanaPI) => {
     setDeleteTarget(pi);
     setDeleteConfirmOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (!deleteTarget) return;
+    if (activeTab === "tana") {
+      deleteTanaMutation.mutate(deleteTarget.id);
+    } else {
+      deleteBanaMutation.mutate(deleteTarget.id);
+    }
   };
 
   const handleFormSubmit = (values: FormValues) => {
@@ -126,7 +176,7 @@ export default function TanaInvoicesPage() {
       ? new Date(new Date(values.piDate).getTime() + values.paymentTermsDays * 86400000).toISOString().split("T")[0]
       : "";
 
-    updateMutation.mutate({
+    const updated = {
       ...editPI,
       ...values,
       taxableAmount: parseFloat(taxableAmount.toFixed(2)),
@@ -135,153 +185,271 @@ export default function TanaInvoicesPage() {
       netPayable: parseFloat(netPayable.toFixed(2)),
       dueDate,
       amountInWords: numberToWords(Math.round(netPayable))
-    });
+    };
+
+    if (activeTab === "tana") {
+      updateTanaMutation.mutate(updated as TanaPI);
+    } else {
+      updateBanaMutation.mutate(updated as BanaPI);
+    }
   };
 
-  const filtered = invoices.filter(i => {
-    const ms = i.piNumber.toLowerCase().includes(searchValue.toLowerCase()) || i.supplierName.toLowerCase().includes(searchValue.toLowerCase()) || i.supplierInvoiceNo.toLowerCase().includes(searchValue.toLowerCase());
+  const filtered = invoices.filter((i) => {
+    const ms =
+      i.piNumber.toLowerCase().includes(searchValue.toLowerCase()) ||
+      i.supplierName.toLowerCase().includes(searchValue.toLowerCase()) ||
+      i.supplierInvoiceNo.toLowerCase().includes(searchValue.toLowerCase());
     const mst = selectedFilters.paymentStatus === "all" || i.paymentStatus === selectedFilters.paymentStatus;
     return ms && mst;
   });
 
-  const columns: TableColumn<TanaPI>[] = [
-    { key: "piNumber", header: "PI Number", sortable: true, render: (item) => <span className="font-bold text-primary">{item.piNumber}</span> },
+  const columns: TableColumn<TanaPI | BanaPI>[] = [
+    {
+      key: "piNumber",
+      header: "PI Number",
+      sortable: true,
+      render: (item) => (
+        <Link
+          href={`/dashboard/${activeTab}/invoices/${item.id}`}
+          className="font-bold text-primary hover:underline flex items-center gap-1"
+        >
+          <span>{item.piNumber}</span>
+        </Link>
+      )
+    },
     { key: "piDate", header: "PI Date", sortable: true },
     { key: "supplierName", header: "Supplier", sortable: true },
     { key: "supplierInvoiceNo", header: "Supp. Invoice No." },
-    { key: "linkedGRNNumber", header: "Linked GRN", render: (item) => <span className="text-xs">{item.linkedGRNNumber}</span> },
+    {
+      key: "linkedGRNNumber",
+      header: "Linked GRN",
+      render: (item) => (
+        <Link
+          href={`/dashboard/tana/goods-receipt/${encodeURIComponent(item.linkedGRNId || item.linkedGRNNumber)}`}
+          className="text-xs text-primary font-mono font-bold hover:underline"
+        >
+          {item.linkedGRNNumber}
+        </Link>
+      )
+    },
     { key: "taxableAmount", header: "Taxable Amt", render: (item) => <span className="font-semibold">₹{item.taxableAmount.toLocaleString()}</span> },
-    { key: "netPayable", header: "Net Payable", render: (item) => <span className="font-bold">₹{item.netPayable.toLocaleString()}</span> },
+    { key: "netPayable", header: "Net Payable", render: (item) => <span className="font-bold text-emerald-600">₹{item.netPayable.toLocaleString()}</span> },
     { key: "dueDate", header: "Due Date", sortable: true },
     {
-      key: "paymentStatus", header: "Payment", render: (item) => <Badge variant="outline" className={`text-[10px] font-bold ${paymentStatusColors[item.paymentStatus] || ""}`}>{item.paymentStatus}</Badge>, sortable: true
+      key: "paymentStatus",
+      header: "Payment",
+      render: (item) => (
+        <Badge variant="outline" className={`text-[10px] font-bold ${paymentStatusColors[item.paymentStatus] || ""}`}>
+          {item.paymentStatus}
+        </Badge>
+      ),
+      sortable: true
     }
   ];
 
   return (
     <PageContainer>
       <PageHeader
-        title="Tana Purchase Invoices"
-        description="Manage and track purchase invoices for Tana (Warp Yarn) with full GST breakup. Series: TANA-PI-YYYY-NNNN."
-        breadcrumbs={[{ title: "Dashboard", href: "/dashboard/default" }, { title: "Tana (Warp)" }, { title: "Invoices" }]}
-      />
-
-      <MasterToolbar
-        searchValue={searchValue}
-        onSearchChange={setSearchValue}
-        createLabel="Create Invoice"
-        onCreateClick={() => window.location.href = "/dashboard/tana/invoices/new"}
-        exportTitle="Tana Invoices"
-        selectedFilters={selectedFilters}
-        onFilterChange={(key, val) => setSelectedFilters(p => ({ ...p, [key]: val }))}
-        onClearFilters={() => { setSearchValue(""); setSelectedFilters({ paymentStatus: "all" }); }}
-        filters={[
-          { key: "paymentStatus", placeholder: "Payment Status", options: [{ label: "Pending", value: "Pending" }, { label: "Partially Paid", value: "Partially Paid" }, { label: "Paid", value: "Paid" }] }
+        title="Yarn Purchase Invoices"
+        description="Unified portal to manage and track Purchase Invoices for Tana (Warp) and Bana (Weft) with line-item CGST/SGST breakdown."
+        breadcrumbs={[
+          { title: "Dashboard", href: "/dashboard/default" },
+          { title: "Procurement" },
+          { title: "Yarn Purchase Invoices" }
         ]}
       />
 
-      <MasterTable
-        data={filtered}
-        columns={columns}
-        isLoading={isLoading}
-        onView={(item) => setViewPI(item)}
-        onEdit={handleEditClick}
-        onDelete={handleDeleteClick}
-        onBulkDelete={(items) => items.forEach(i => deleteMutation.mutate(i.id))}
-      />
-
-      {/* View Invoice Dialog */}
-      <MasterDialog
-        isOpen={!!viewPI}
-        onClose={() => setViewPI(null)}
-        title="Purchase Invoice Details (Tana)"
-        description={`PI #: ${viewPI?.piNumber} | Supplier Inv #: ${viewPI?.supplierInvoiceNo}`}
-      >
-        {viewPI && (
-          <DetailViewCard
-            title={viewPI.piNumber}
-            subtitle={`Supplier: ${viewPI.supplierName} • Linked GRN: ${viewPI.linkedGRNNumber}`}
-            statusBadge={
-              <Badge variant="outline" className={`text-[10px] font-bold ${paymentStatusColors[viewPI.paymentStatus] || ""}`}>
-                {viewPI.paymentStatus}
-              </Badge>
-            }
-            sections={[
-              {
-                title: "Supplier & References",
-                fields: [
-                  { label: "Supplier Name", value: viewPI.supplierName, highlight: true },
-                  { label: "Supplier Inv No.", value: viewPI.supplierInvoiceNo, mono: true },
-                  { label: "Supplier Inv Date", value: viewPI.supplierInvoiceDate || "—", mono: true },
-                  { label: "Linked GRN", value: viewPI.linkedGRNNumber, mono: true },
-                  { label: "Linked PO", value: viewPI.linkedPONumber, mono: true },
-                  { label: "Payment Terms", value: `${viewPI.paymentTermsDays || 30} Days Credit` }
-                ]
-              },
-              {
-                title: "Item & Quantity Specs",
-                fields: [
-                  { label: "Item Description", value: viewPI.itemDescription, colSpan: 2 },
-                  { label: "Total Weight", value: `${viewPI.totalWeightKg.toLocaleString()} KG`, highlight: true },
-                  { label: "Rate per KG", value: `₹${viewPI.ratePerKg}`, mono: true },
-                  { label: "Payment Due Date", value: viewPI.dueDate, mono: true, highlight: true }
-                ]
-              }
-            ]}
-          >
-            {/* Financial Totals Card */}
-            <div className="p-4 bg-muted/20 rounded-xl border border-border/30 space-y-2">
-              <div className="flex justify-between items-center text-xs">
-                <span className="text-muted-foreground">Taxable Amount:</span>
-                <span className="font-semibold font-mono">₹{viewPI.taxableAmount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
+      {/* Unified Stats Cards */}
+      <div className="grid gap-4 sm:grid-cols-2 mb-4">
+        <Card className="border-border/40 shadow-sm relative overflow-hidden">
+          <div className="absolute right-3 top-3 opacity-10">
+            <Layers className="h-14 w-14 text-primary" />
+          </div>
+          <CardContent className="p-4">
+            <Badge className="bg-primary/10 text-primary border-transparent mb-2">Tana (Warp Invoices)</Badge>
+            <div className="flex justify-between items-end mt-2">
+              <div>
+                <p className="text-2xl font-bold text-foreground">{tanaPIs.length} Invoices</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {tanaPIs.filter((p) => p.paymentStatus !== "Paid").length} Pending Payment
+                </p>
               </div>
-              <div className="flex justify-between items-center text-xs">
-                <span className="text-muted-foreground">CGST @ {viewPI.cgstPercent}% + SGST @ {viewPI.sgstPercent}%:</span>
-                <span className="font-semibold font-mono">₹{(viewPI.cgstAmount + viewPI.sgstAmount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
+              <div className="text-right">
+                <p className="text-xs text-muted-foreground font-medium">Total Net Value</p>
+                <p className="text-base font-bold text-foreground">
+                  ₹{tanaPIs.reduce((acc, p) => acc + p.netPayable, 0).toLocaleString("en-IN")}
+                </p>
               </div>
-              {viewPI.roundOff !== 0 && (
-                <div className="flex justify-between items-center text-xs text-muted-foreground">
-                  <span>Round Off:</span>
-                  <span className="font-mono">₹{viewPI.roundOff}</span>
-                </div>
-              )}
-              <div className="flex justify-between items-center text-sm font-bold text-primary pt-2 border-t border-border/20">
-                <span>Net Total Payable:</span>
-                <span className="text-base font-mono font-bold">₹{viewPI.netPayable.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
-              </div>
-              {viewPI.amountInWords && (
-                <p className="text-[10px] text-muted-foreground italic pt-1">{viewPI.amountInWords}</p>
-              )}
             </div>
+          </CardContent>
+        </Card>
 
-            <div className="flex justify-end gap-2 pt-2">
-              <Button variant="outline" size="sm" onClick={() => setViewPI(null)} className="h-8 px-6 cursor-pointer">
-                Close Details
-              </Button>
+        <Card className="border-border/40 shadow-sm relative overflow-hidden">
+          <div className="absolute right-3 top-3 opacity-10">
+            <ShoppingBag className="h-14 w-14 text-emerald-600" />
+          </div>
+          <CardContent className="p-4">
+            <Badge className="bg-emerald-500/10 text-emerald-600 border-transparent mb-2">Bana (Weft Invoices)</Badge>
+            <div className="flex justify-between items-end mt-2">
+              <div>
+                <p className="text-2xl font-bold text-foreground">{banaPIs.length} Invoices</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {banaPIs.filter((p) => p.paymentStatus !== "Paid").length} Pending Payment
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="text-xs text-muted-foreground font-medium">Total Net Value</p>
+                <p className="text-base font-bold text-foreground">
+                  ₹{banaPIs.reduce((acc, p) => acc + p.netPayable, 0).toLocaleString("en-IN")}
+                </p>
+              </div>
             </div>
-          </DetailViewCard>
-        )}
-      </MasterDialog>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="space-y-4">
+        <div className="flex justify-between items-center flex-wrap gap-2 border-b border-border/40 pb-2">
+          <TabsList className="grid w-[240px] grid-cols-2">
+            <TabsTrigger value="tana" className="cursor-pointer">
+              Tana (Warp)
+            </TabsTrigger>
+            <TabsTrigger value="bana" className="cursor-pointer">
+              Bana (Weft)
+            </TabsTrigger>
+          </TabsList>
+          <span className="text-xs font-semibold text-muted-foreground bg-muted/40 px-2.5 py-1 rounded">
+            Viewing: {activeTab === "tana" ? "Warp Invoices Series" : "Weft Invoices Series"}
+          </span>
+        </div>
+
+        <TabsContent value="tana" className="m-0 space-y-4">
+          {activeTab === "tana" && (
+            <>
+              <MasterToolbar
+                searchValue={searchValue}
+                onSearchChange={setSearchValue}
+                createLabel="Create Tana Invoice"
+                onCreateClick={() => router.push("/dashboard/tana/invoices/new")}
+                exportTitle="Tana Invoices"
+                selectedFilters={selectedFilters}
+                onFilterChange={(key, val) => setSelectedFilters((p) => ({ ...p, [key]: val }))}
+                onClearFilters={() => {
+                  setSearchValue("");
+                  setSelectedFilters({ paymentStatus: "all" });
+                }}
+                filters={[
+                  {
+                    key: "paymentStatus",
+                    placeholder: "Payment Status",
+                    options: [
+                      { label: "Pending", value: "Pending" },
+                      { label: "Partially Paid", value: "Partially Paid" },
+                      { label: "Paid", value: "Paid" }
+                    ]
+                  }
+                ]}
+              />
+              <MasterTable
+                data={filtered}
+                columns={columns}
+                isLoading={isLoading}
+                onView={(item) => router.push(`/dashboard/tana/invoices/${item.id}`)}
+                onEdit={handleEditClick}
+                onDelete={handleDeleteClick}
+                onBulkDelete={(items) => items.forEach((i) => deleteTanaMutation.mutate(i.id))}
+              />
+            </>
+          )}
+        </TabsContent>
+
+        <TabsContent value="bana" className="m-0 space-y-4">
+          {activeTab === "bana" && (
+            <>
+              <MasterToolbar
+                searchValue={searchValue}
+                onSearchChange={setSearchValue}
+                createLabel="Create Bana Invoice"
+                onCreateClick={() => router.push("/dashboard/tana/invoices/new")}
+                exportTitle="Bana Invoices"
+                selectedFilters={selectedFilters}
+                onFilterChange={(key, val) => setSelectedFilters((p) => ({ ...p, [key]: val }))}
+                onClearFilters={() => {
+                  setSearchValue("");
+                  setSelectedFilters({ paymentStatus: "all" });
+                }}
+                filters={[
+                  {
+                    key: "paymentStatus",
+                    placeholder: "Payment Status",
+                    options: [
+                      { label: "Pending", value: "Pending" },
+                      { label: "Partially Paid", value: "Partially Paid" },
+                      { label: "Paid", value: "Paid" }
+                    ]
+                  }
+                ]}
+              />
+              <MasterTable
+                data={filtered}
+                columns={columns}
+                isLoading={isLoading}
+                onView={(item) => router.push(`/dashboard/bana/invoices/${item.id}`)}
+                onEdit={handleEditClick}
+                onDelete={handleDeleteClick}
+                onBulkDelete={(items) => items.forEach((i) => deleteBanaMutation.mutate(i.id))}
+              />
+            </>
+          )}
+        </TabsContent>
+      </Tabs>
 
       {/* Edit Invoice Dialog */}
       <MasterDialog
         isOpen={!!editPI}
         onClose={() => setEditPI(null)}
-        title={`Edit Invoice: ${editPI?.piNumber}`}
-        description={`Supplier: ${editPI?.supplierName}`}
+        title={`Edit ${activeTab === "tana" ? "Tana" : "Bana"} Purchase Invoice`}
+        description={`Modify invoice details for ${editPI?.piNumber}`}
       >
         {editPI && (
-          <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4 text-xs">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold">PI Date *</Label>
-                <Input type="date" {...form.register("piDate")} />
-                {form.formState.errors.piDate && <p className="text-[10px] text-destructive">{form.formState.errors.piDate.message}</p>}
+          <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4 pt-2">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs font-semibold">Supplier Invoice No.</Label>
+                <Input {...form.register("supplierInvoiceNo")} />
               </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold">Payment Status *</Label>
-                <Select onValueChange={(v) => form.setValue("paymentStatus", v as any)} value={form.watch("paymentStatus")}>
-                  <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+              <div className="space-y-1">
+                <Label className="text-xs font-semibold">Supplier Invoice Date</Label>
+                <Input type="date" {...form.register("supplierInvoiceDate")} />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs font-semibold">PI Date</Label>
+                <Input type="date" {...form.register("piDate")} />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs font-semibold">Rate per KG (₹)</Label>
+                <Input type="number" step="0.01" {...form.register("ratePerKg", { valueAsNumber: true })} />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs font-semibold">Round Off (₹)</Label>
+                <Input type="number" step="0.01" {...form.register("roundOff", { valueAsNumber: true })} />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs font-semibold">Payment Terms (Days)</Label>
+                <Input type="number" {...form.register("paymentTermsDays", { valueAsNumber: true })} />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs font-semibold">Payment Status</Label>
+                <Select onValueChange={(v: any) => form.setValue("paymentStatus", v)} value={form.watch("paymentStatus")}>
+                  <SelectTrigger className="h-9">
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Pending">Pending</SelectItem>
                     <SelectItem value="Partially Paid">Partially Paid</SelectItem>
@@ -291,74 +459,32 @@ export default function TanaInvoicesPage() {
               </div>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold">Supplier Invoice No *</Label>
-                <Input {...form.register("supplierInvoiceNo")} />
-                {form.formState.errors.supplierInvoiceNo && <p className="text-[10px] text-destructive">{form.formState.errors.supplierInvoiceNo.message}</p>}
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold">Supplier Invoice Date *</Label>
-                <Input type="date" {...form.register("supplierInvoiceDate")} />
-                {form.formState.errors.supplierInvoiceDate && <p className="text-[10px] text-destructive">{form.formState.errors.supplierInvoiceDate.message}</p>}
-              </div>
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-3">
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold">Rate per KG (₹) *</Label>
-                <Input type="number" step="0.01" {...form.register("ratePerKg", { valueAsNumber: true })} />
-                {form.formState.errors.ratePerKg && <p className="text-[10px] text-destructive">{form.formState.errors.ratePerKg.message}</p>}
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold">Round Off (₹)</Label>
-                <Input type="number" step="0.01" {...form.register("roundOff", { valueAsNumber: true })} />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold">Payment Terms (Days) *</Label>
-                <Input type="number" {...form.register("paymentTermsDays", { valueAsNumber: true })} />
-              </div>
-            </div>
-
-            {/* Calculations Preview */}
-            <div className="bg-muted/10 rounded-lg border p-3 text-xs space-y-1">
-              <span className="font-bold text-[10px] text-muted-foreground uppercase tracking-wider block mb-1">Calculations Preview</span>
-              <div className="flex justify-between"><span>Weight</span><span>{editPI.totalWeightKg.toLocaleString()} KG</span></div>
-              <div className="flex justify-between"><span>Computed Taxable</span><span>₹{((form.watch("ratePerKg") || 0) * editPI.totalWeightKg).toLocaleString("en-IN", { maximumFractionDigits: 2 })}</span></div>
-              <div className="flex justify-between font-bold text-foreground border-t border-border/20 pt-1.5">
-                <span>Grand Total Net</span>
-                <span>
-                  ₹{(
-                    ((form.watch("ratePerKg") || 0) * editPI.totalWeightKg) * (1 + (editPI.cgstPercent + editPI.sgstPercent) / 100) + (form.watch("roundOff") || 0)
-                  ).toLocaleString("en-IN", { maximumFractionDigits: 2 })}
-                </span>
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-2 pt-2">
-              <Button type="button" variant="outline" onClick={() => setEditPI(null)}>Cancel</Button>
-              <Button type="submit" disabled={updateMutation.isPending}>
-                {updateMutation.isPending ? "Saving..." : "Save Changes"}
+            <div className="flex justify-end gap-2 pt-4">
+              <Button type="button" variant="outline" onClick={() => setEditPI(null)}>
+                Cancel
+              </Button>
+              <Button type="submit" className="bg-primary text-primary-foreground font-bold">
+                Save Invoice Changes
               </Button>
             </div>
           </form>
         )}
       </MasterDialog>
 
-      {/* Delete Confirmation Alert */}
+      {/* Delete Confirmation */}
       <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="text-sm font-bold flex items-center gap-2 text-destructive">
-              <Trash2 className="h-4 w-4" />Delete Tana Purchase Invoice?
+              <Trash2 className="h-4 w-4" /> Delete {activeTab === "tana" ? "Tana" : "Bana"} Invoice?
             </AlertDialogTitle>
             <AlertDialogDescription className="text-xs">
-              Are you sure you want to delete purchase invoice <strong>{deleteTarget?.piNumber}</strong>? This action cannot be undone.
+              Are you sure you want to delete invoice <strong className="text-foreground">{deleteTarget?.piNumber}</strong>?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction className="bg-destructive text-white hover:bg-destructive/90 text-xs cursor-pointer" onClick={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)}>
+            <AlertDialogAction onClick={handleConfirmDelete} className="bg-red-600 hover:bg-red-700 text-xs cursor-pointer">
               Delete Invoice
             </AlertDialogAction>
           </AlertDialogFooter>

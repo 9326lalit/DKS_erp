@@ -14,6 +14,7 @@ import {
   Factory,
   Database,
   Layers,
+  Scissors,
   ChevronRight,
   TrendingDown,
   Warehouse,
@@ -38,6 +39,14 @@ export default function MastersDirectoryPage() {
   } = useMastersStore();
 
   const masterModules = [
+    {
+      title: "Open Stock Master (Admin Master)",
+      description: "Unified admin master for Tana Open Stock Sets, Sizing Mill allocations, yarn ends, pipe specs, and live set details.",
+      href: "/dashboard/masters/open-stock",
+      icon: Database,
+      count: "Admin Master",
+      color: "text-primary bg-primary/10 border-primary/20"
+    },
     {
       title: "Parties (Suppliers/Customers)",
       description: "Manage suppliers, yarn mills, grey cloth customers, sizing jobworkers, and transporters.",

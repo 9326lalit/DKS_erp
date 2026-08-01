@@ -107,7 +107,16 @@ export default function YarnPurchaseOrdersPage() {
   const formatCurrency = (v: number) => `₹${v.toLocaleString("en-IN")}`;
 
   const columns: TableColumn<TanaPO | BanaPO>[] = [
-    { key: "poNumber", header: "PO Number", sortable: true, render: (item) => <span className="font-bold text-primary">{item.poNumber}</span> },
+    {
+      key: "poNumber",
+      header: "PO Number",
+      sortable: true,
+      render: (item) => (
+        <Link href={`/dashboard/${activeTab}/purchase-orders/${item.id}`} className="font-bold text-primary hover:underline">
+          {item.poNumber}
+        </Link>
+      )
+    },
     { key: "poDate", header: "PO Date", sortable: true },
     { key: "purchaseFromName", header: "Supplier", sortable: true },
     { key: "itemName", header: "Item / Quality", render: (item) => <span className="text-xs">{item.itemName}</span> },
@@ -264,9 +273,9 @@ export default function YarnPurchaseOrdersPage() {
             {/* Line Items Table */}
             {viewPO.items && viewPO.items.length > 0 ? (
               <div className="space-y-2">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-foreground">Ordered Line Items</h4>
-                <div className="border border-border/40 rounded-lg overflow-hidden">
-                  <table className="w-full border-collapse text-xs">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-foreground">Ordered Line Items &amp; Tax Breakdown</h4>
+                <div className="border border-border/40 rounded-lg overflow-x-auto">
+                  <table className="w-full border-collapse text-xs min-w-[700px]">
                     <thead>
                       <tr className="bg-muted/30 border-b border-border/20 text-muted-foreground font-semibold">
                         <th className="px-3 py-2 text-left">#</th>
@@ -274,20 +283,26 @@ export default function YarnPurchaseOrdersPage() {
                         <th className="px-3 py-2 text-center">Qty (Bags)</th>
                         <th className="px-3 py-2 text-right">Weight (KG)</th>
                         <th className="px-3 py-2 text-right">Rate (₹/KG)</th>
-                        <th className="px-3 py-2 text-right">GST %</th>
-                        <th className="px-3 py-2 text-right">Net Value</th>
+                        <th className="px-3 py-2 text-right">Gross (₹)</th>
+                        <th className="px-3 py-2 text-right">CGST %</th>
+                        <th className="px-3 py-2 text-right">SGST %</th>
+                        <th className="px-3 py-2 text-right">Net Payable</th>
+                        <th className="px-3 py-2 text-left">Line Remarks</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {viewPO.items.map((item, idx) => (
+                      {viewPO.items.map((item: any, idx: number) => (
                         <tr key={item.id || idx} className="border-b border-border/10 hover:bg-muted/10 last:border-0">
                           <td className="px-3 py-2 font-medium text-muted-foreground">{idx + 1}</td>
                           <td className="px-3 py-2 font-bold text-foreground">{item.itemName}</td>
                           <td className="px-3 py-2 text-center font-bold">{item.totalBagsOrdered}</td>
                           <td className="px-3 py-2 text-right text-muted-foreground">{item.totalWeightKg.toLocaleString()} KG</td>
                           <td className="px-3 py-2 text-right font-mono">₹{item.ratePerKg}</td>
-                          <td className="px-3 py-2 text-right text-muted-foreground">{((item.cgstPercent || 0) + (item.sgstPercent || 0))}%</td>
+                          <td className="px-3 py-2 text-right font-mono">₹{(item.grossAmount || 0).toLocaleString()}</td>
+                          <td className="px-3 py-2 text-right text-blue-600 font-bold">{item.cgstPercent || 6}% (₹{item.cgstAmount || 0})</td>
+                          <td className="px-3 py-2 text-right text-emerald-600 font-bold">{item.sgstPercent || 6}% (₹{item.sgstAmount || 0})</td>
                           <td className="px-3 py-2 text-right font-bold text-primary font-mono">₹{item.netPayable.toLocaleString()}</td>
+                          <td className="px-3 py-2 text-xs text-muted-foreground italic">{item.itemRemarks || "—"}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -311,8 +326,12 @@ export default function YarnPurchaseOrdersPage() {
                 <span className="font-semibold font-mono">₹{viewPO.grossAmount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
               </div>
               <div className="flex justify-between items-center text-xs">
-                <span className="text-muted-foreground">CGST + SGST Tax:</span>
-                <span className="font-semibold font-mono">₹{(viewPO.cgstAmount + viewPO.sgstAmount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
+                <span className="text-blue-600 font-medium">CGST Tax Amount:</span>
+                <span className="font-semibold font-mono text-blue-600">₹{(viewPO.cgstAmount || (viewPO.totalTaxAmount / 2) || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
+              </div>
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-emerald-600 font-medium">SGST Tax Amount:</span>
+                <span className="font-semibold font-mono text-emerald-600">₹{(viewPO.sgstAmount || (viewPO.totalTaxAmount / 2) || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
               </div>
               <div className="flex justify-between items-center text-sm font-bold text-primary pt-2 border-t border-border/20">
                 <span>Net Total Payable:</span>

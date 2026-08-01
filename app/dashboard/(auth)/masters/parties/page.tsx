@@ -143,8 +143,26 @@ export default function PartiesPage() {
 
   const columns: TableColumn<Party>[] = [
     { key: "createdDate", header: "Created Date", render: (item) => <span className="font-mono text-xs text-muted-foreground">{item.createdDate || "25 Jul 2026"}</span>, sortable: true },
-    { key: "partyCode", header: "Code", sortable: true },
-    { key: "partyName", header: "Party Name", sortable: true },
+    {
+      key: "partyCode",
+      header: "Code",
+      sortable: true,
+      render: (item) => (
+        <button onClick={() => handleViewClick(item)} className="font-mono text-xs font-bold text-primary hover:underline text-left cursor-pointer">
+          {item.partyCode}
+        </button>
+      )
+    },
+    {
+      key: "partyName",
+      header: "Party Name",
+      sortable: true,
+      render: (item) => (
+        <button onClick={() => handleViewClick(item)} className="font-bold text-xs text-foreground hover:text-primary hover:underline text-left cursor-pointer">
+          {item.partyName}
+        </button>
+      )
+    },
     {
       key: "partyType", header: "Type",
       render: (item) => <Badge variant="outline" className={`text-[10px] font-bold ${partyTypeColors[item.partyType] || ""}`}>{item.partyType}</Badge>,
