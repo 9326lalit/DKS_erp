@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useEffect } from "react";
-import { ChevronsUpDown, Factory, Building2, Check, Plus, ShieldCheck } from "lucide-react";
+import { ChevronsUpDown, Factory, Building2, Check, Plus, ShieldCheck, Crown } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { useIsTablet } from "@/hooks/use-mobile";
 import Link from "next/link";
@@ -42,7 +42,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const isTablet = useIsTablet();
   const { t } = useLanguage();
 
-  const { tenants, activeTenantId, activeUnitId, setActiveTenant, setActiveUnit } = useTenantStore();
+  const { tenants, activeTenantId, activeUnitId, setActiveTenant, setActiveUnit, isGlobalSuperAdmin } = useTenantStore();
   const activeTenant = tenants.find((tenant) => tenant.id === activeTenantId) || tenants[0];
   const activeUnit = activeTenant.units.find((unit) => unit.id === activeUnitId) || activeTenant.units[0];
 
@@ -71,32 +71,51 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <SidebarMenuButton className="hover:text-foreground h-12 group-data-[collapsible=icon]:px-0! hover:bg-emerald-500/10 transition-colors">
-                  <div className="flex size-8 items-center justify-center rounded-lg bg-emerald-600 text-white font-bold shrink-0">
-                    <span>{activeTenant?.logo || "🏭"}</span>
-                  </div>
-                  <div className="flex flex-col text-left truncate leading-tight flex-1">
-                    <div className="flex items-center gap-1.5 truncate">
-                      <span className="text-foreground font-bold text-sm truncate">{activeTenant?.name || "DKS ERP"}</span>
-                      <Badge variant="outline" className="text-[9px] px-1 py-0 border-emerald-500/40 text-emerald-600 dark:text-emerald-400">
-                        {activeTenant?.plan}
-                      </Badge>
-                    </div>
-                    <span className="text-muted-foreground text-[11px] truncate">
-                      {activeUnit?.name || activeTenant?.cluster}
-                    </span>
-                  </div>
-                  <ChevronsUpDown className="ml-auto size-4 shrink-0 text-muted-foreground group-data-[collapsible=icon]:hidden" />
-                </SidebarMenuButton>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                className="w-(--radix-dropdown-menu-trigger-width) min-w-72 rounded-xl p-2 shadow-xl"
-                side={isMobile ? "bottom" : "right"}
-                align="end"
-                sideOffset={4}
+            {isGlobalSuperAdmin ? (
+              <SidebarMenuButton
+                onClick={() => router.push("/dashboard/super-admin")}
+                className="hover:text-foreground h-12 group-data-[collapsible=icon]:px-0! hover:bg-amber-500/10 transition-colors cursor-pointer"
               >
+                <div className="flex size-8 items-center justify-center rounded-lg bg-amber-500 text-slate-950 font-bold shrink-0">
+                  <Crown className="h-5 w-5 text-slate-950" />
+                </div>
+                <div className="flex flex-col text-left truncate leading-tight flex-1">
+                  <div className="flex items-center gap-1.5 truncate">
+                    <span className="text-foreground font-bold text-sm truncate">DKS SaaS Platform</span>
+                    <Badge className="bg-amber-500 text-slate-950 text-[9px] px-1 py-0 font-extrabold">SUPER ADMIN</Badge>
+                  </div>
+                  <span className="text-muted-foreground text-[11px] truncate">
+                    Global Control Center
+                  </span>
+                </div>
+              </SidebarMenuButton>
+            ) : (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <SidebarMenuButton className="hover:text-foreground h-12 group-data-[collapsible=icon]:px-0! hover:bg-emerald-500/10 transition-colors">
+                    <div className="flex size-8 items-center justify-center rounded-lg bg-emerald-600 text-white font-bold shrink-0">
+                      <span>{activeTenant?.logo || "🏭"}</span>
+                    </div>
+                    <div className="flex flex-col text-left truncate leading-tight flex-1">
+                      <div className="flex items-center gap-1.5 truncate">
+                        <span className="text-foreground font-bold text-sm truncate">{activeTenant?.name || "DKS ERP"}</span>
+                        <Badge variant="outline" className="text-[9px] px-1 py-0 border-emerald-500/40 text-emerald-600 dark:text-emerald-400">
+                          {activeTenant?.plan}
+                        </Badge>
+                      </div>
+                      <span className="text-muted-foreground text-[11px] truncate">
+                        {activeUnit?.name || activeTenant?.cluster}
+                      </span>
+                    </div>
+                    <ChevronsUpDown className="ml-auto size-4 shrink-0 text-muted-foreground group-data-[collapsible=icon]:hidden" />
+                  </SidebarMenuButton>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  className="w-(--radix-dropdown-menu-trigger-width) min-w-72 rounded-xl p-2 shadow-xl"
+                  side={isMobile ? "bottom" : "right"}
+                  align="end"
+                  sideOffset={4}
+                >
                 <DropdownMenuLabel className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-2 py-1 flex items-center justify-between">
                   <span>Multi-Tenant Organizations</span>
                   <Badge variant="secondary" className="text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-0">
@@ -172,6 +191,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+            )}
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
