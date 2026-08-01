@@ -8,6 +8,8 @@ import {
   ChevronRight,
   Component,
   Factory,
+  Building2,
+  Crown,
   LayoutDashboard,
   Package,
   Settings,
@@ -67,6 +69,12 @@ export const navItems: NavGroup[] = [
         title: "Dashboard",
         href: "/dashboard/default",
         icon: LayoutDashboard
+      },
+      {
+        title: "Super Admin Portal",
+        href: "/dashboard/super-admin",
+        icon: Crown,
+        isNew: true
       }
     ]
   },
@@ -74,10 +82,15 @@ export const navItems: NavGroup[] = [
     title: "Master Data",
     items: [
       {
+        title: "Tenant Organizations",
+        href: "/dashboard/masters/tenants",
+        icon: Building2,
+        isNew: true
+      },
+      {
         title: "Open Stock Master",
         href: "/dashboard/masters/open-stock",
-        icon: Layers,
-        isNew: true
+        icon: Layers
       },
       {
         title: "Factory Master",

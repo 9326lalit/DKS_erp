@@ -3,6 +3,7 @@
 
 import { getMockData, Loom, ProductionRecord, SalesRecord, ExpenseRecord, YarnLot, Beam } from "@/lib/mock/data-generator";
 import { useERPStore, BusinessDetails, FactoryDetails, FinancialYearDetails } from "@/lib/store/use-erp-store";
+import { useTenantStore } from "@/lib/store/use-tenant-store";
 
 // Helper to simulate network latency
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -96,8 +97,9 @@ export const mockApiService = {
 
   // Dashboard Aggregated Analytics
   async getDashboard(): Promise<DashboardData> {
-    await delay(450);
-    const data = getMockData();
+    await delay(300);
+    const activeTenantId = useTenantStore.getState().activeTenantId;
+    const data = getMockData(activeTenantId);
 
     // 1. Calculate Loom Statuses
     const runningLooms = data.looms.filter((l) => l.status === "running").length;

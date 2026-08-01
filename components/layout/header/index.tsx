@@ -1,7 +1,6 @@
 "use client";
 
-import { PanelLeftIcon } from "lucide-react";
-
+import { PanelLeftIcon, ChevronDown, Check, Building2 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import Notifications from "@/components/layout/header/notifications";
 import Search from "@/components/layout/header/search";
@@ -11,9 +10,28 @@ import UserMenu from "@/components/layout/header/user-menu";
 import { ThemeCustomizerPanel } from "@/components/theme-customizer";
 import { Button } from "@/components/ui/button";
 import { useSidebar } from "@/components/ui/sidebar";
+import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu";
+import { useTenantStore } from "@/lib/store/use-tenant-store";
+import { toast } from "sonner";
 
 export function SiteHeader() {
   const { toggleSidebar } = useSidebar();
+  const { tenants, activeTenantId, setActiveTenant } = useTenantStore();
+  const activeTenant = tenants.find((t) => t.id === activeTenantId) || tenants[0];
+
+  const handleSwitch = (id: string) => {
+    setActiveTenant(id);
+    const target = tenants.find((t) => t.id === id);
+    toast.success(`Switched Tenant Mill: ${target?.name}`);
+  };
 
   return (
     <header className="bg-background/40 sticky top-0 z-50 flex h-(--header-height) shrink-0 items-center gap-2 border-b backdrop-blur-md transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-(--header-height) md:rounded-tl-xl md:rounded-tr-xl">
@@ -22,6 +40,49 @@ export function SiteHeader() {
           <PanelLeftIcon />
         </Button>
         <Separator orientation="vertical" className="mx-2 data-[orientation=vertical]:h-4" />
+        
+        {/* Quick Tenant Switcher Badge in Header */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" className="hidden sm:flex h-8 gap-2 bg-background/80 border-emerald-500/20 hover:border-emerald-500/40 text-xs font-semibold px-2.5 cursor-pointer">
+              <span className="text-base">{activeTenant.logo}</span>
+              <span className="truncate max-w-[140px] text-foreground">{activeTenant.name}</span>
+              <Badge variant="secondary" className="text-[9px] px-1 py-0 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                {activeTenant.cluster.split(",")[0]}
+              </Badge>
+              <ChevronDown className="h-3.5 w-3.5 text-muted-foreground ml-0.5" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-64 rounded-xl p-2 shadow-xl">
+            <DropdownMenuLabel className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-2 py-1">
+              Select Tenant Organization
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            {tenants.map((t) => {
+              const isSelected = t.id === activeTenantId;
+              return (
+                <DropdownMenuItem
+                  key={t.id}
+                  onClick={() => handleSwitch(t.id)}
+                  className={`flex items-center justify-between p-2 rounded-lg cursor-pointer text-xs ${
+                    isSelected ? "bg-emerald-500/10 font-bold text-emerald-900 dark:text-emerald-200" : ""
+                  }`}
+                >
+                  <div className="flex items-center gap-2 truncate">
+                    <span>{t.logo}</span>
+                    <div className="flex flex-col truncate">
+                      <span className="truncate">{t.name}</span>
+                      <span className="text-[10px] text-muted-foreground font-normal">{t.cluster}</span>
+                    </div>
+                  </div>
+                  {isSelected && <Check className="h-4 w-4 text-emerald-500 shrink-0" />}
+                </DropdownMenuItem>
+              );
+            })}
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        <Separator orientation="vertical" className="mx-2 hidden sm:block data-[orientation=vertical]:h-4" />
         <Search />
 
         <div className="ml-auto flex items-center gap-2">

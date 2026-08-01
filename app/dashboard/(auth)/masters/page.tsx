@@ -1,6 +1,5 @@
 "use client";
 
-import React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMastersStore } from "@/lib/store/use-masters-store";
@@ -14,14 +13,12 @@ import {
   Factory,
   Database,
   Layers,
-  Scissors,
   ChevronRight,
   TrendingDown,
   Warehouse,
   Calendar,
-  Compass,
   FileCheck2,
-  DollarSign
+  Building2
 } from "lucide-react";
 
 export default function MastersDirectoryPage() {
@@ -39,6 +36,14 @@ export default function MastersDirectoryPage() {
   } = useMastersStore();
 
   const masterModules = [
+    {
+      title: "Multi-Tenant Organizations (Enterprise)",
+      description: "Manage independent textile mill organizations, register new mill tenants, & view testing credentials.",
+      href: "/dashboard/masters/tenants",
+      icon: Building2,
+      count: "4 Active Mills",
+      color: "text-emerald-600 bg-emerald-500/10 border-emerald-500/20"
+    },
     {
       title: "Open Stock Master (Admin Master)",
       description: "Unified admin master for Tana Open Stock Sets, Sizing Mill allocations, yarn ends, pipe specs, and live set details.",

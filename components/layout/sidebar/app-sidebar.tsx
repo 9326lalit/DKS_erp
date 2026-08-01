@@ -2,10 +2,11 @@
 
 import * as React from "react";
 import { useEffect } from "react";
-import { ChevronsUpDown, Factory, Building2 } from "lucide-react";
-import { usePathname } from "next/navigation";
+import { ChevronsUpDown, Factory, Building2, Check, Plus, ShieldCheck } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
 import { useIsTablet } from "@/hooks/use-mobile";
 import Link from "next/link";
+import { toast } from "sonner";
 
 import {
   Sidebar,
@@ -27,18 +28,23 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuTrigger
+  DropdownMenuTrigger,
+  DropdownMenuGroup
 } from "@/components/ui/dropdown-menu";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-
+import { Badge } from "@/components/ui/badge";
 import { useLanguage } from "@/lib/i18n/language-context";
+import { useTenantStore } from "@/lib/store/use-tenant-store";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname();
+  const router = useRouter();
   const { setOpen, setOpenMobile, isMobile } = useSidebar();
   const isTablet = useIsTablet();
   const { t } = useLanguage();
+
+  const { tenants, activeTenantId, activeUnitId, setActiveTenant, setActiveUnit } = useTenantStore();
+  const activeTenant = tenants.find((tenant) => tenant.id === activeTenantId) || tenants[0];
+  const activeUnit = activeTenant.units.find((unit) => unit.id === activeUnitId) || activeTenant.units[0];
 
   useEffect(() => {
     if (isMobile) setOpenMobile(false);
@@ -48,6 +54,18 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     setOpen(!isTablet);
   }, [isTablet]);
 
+  const handleTenantSwitch = (tenantId: string) => {
+    setActiveTenant(tenantId);
+    const tenant = tenants.find((t) => t.id === tenantId);
+    toast.success(`Switched Active Mill Tenant to: ${tenant?.name || "Tenant"}`);
+  };
+
+  const handleUnitSwitch = (unitId: string) => {
+    setActiveUnit(unitId);
+    const unit = activeTenant.units.find((u) => u.id === unitId);
+    toast.success(`Active Weaving Shed set to: ${unit?.name || "Unit"}`);
+  };
+
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
@@ -55,36 +73,102 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <SidebarMenuItem>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <SidebarMenuButton className="hover:text-foreground h-10 group-data-[collapsible=icon]:px-0! hover:bg-[var(--primary)]/5">
-                  <Logo />
-                  <span className="text-foreground font-semibold">{t("appName", "DKS Textile ERP")}</span>
-                  <ChevronsUpDown className="ml-auto group-data-[collapsible=icon]:hidden" />
+                <SidebarMenuButton className="hover:text-foreground h-12 group-data-[collapsible=icon]:px-0! hover:bg-emerald-500/10 transition-colors">
+                  <div className="flex size-8 items-center justify-center rounded-lg bg-emerald-600 text-white font-bold shrink-0">
+                    <span>{activeTenant?.logo || "🏭"}</span>
+                  </div>
+                  <div className="flex flex-col text-left truncate leading-tight flex-1">
+                    <div className="flex items-center gap-1.5 truncate">
+                      <span className="text-foreground font-bold text-sm truncate">{activeTenant?.name || "DKS ERP"}</span>
+                      <Badge variant="outline" className="text-[9px] px-1 py-0 border-emerald-500/40 text-emerald-600 dark:text-emerald-400">
+                        {activeTenant?.plan}
+                      </Badge>
+                    </div>
+                    <span className="text-muted-foreground text-[11px] truncate">
+                      {activeUnit?.name || activeTenant?.cluster}
+                    </span>
+                  </div>
+                  <ChevronsUpDown className="ml-auto size-4 shrink-0 text-muted-foreground group-data-[collapsible=icon]:hidden" />
                 </SidebarMenuButton>
               </DropdownMenuTrigger>
               <DropdownMenuContent
-                className="mt-4 w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
+                className="w-(--radix-dropdown-menu-trigger-width) min-w-72 rounded-xl p-2 shadow-xl"
                 side={isMobile ? "bottom" : "right"}
                 align="end"
-                sideOffset={4}>
-                <DropdownMenuLabel>{t("unitsListTitle", "DKS Weaving Units")}</DropdownMenuLabel>
+                sideOffset={4}
+              >
+                <DropdownMenuLabel className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-2 py-1 flex items-center justify-between">
+                  <span>Multi-Tenant Organizations</span>
+                  <Badge variant="secondary" className="text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-0">
+                    {tenants.length} Mills
+                  </Badge>
+                </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem className="flex items-center gap-3">
-                  <div className="flex size-8 items-center justify-center rounded-md border">
-                    <Factory className="text-muted-foreground size-4" />
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-sm font-medium">Ichalkaranji Unit-I</span>
-                    <span className="text-xs text-green-700 font-bold">{t("unitStatusOperational", "Operational (24x7)")}</span>
-                  </div>
-                </DropdownMenuItem>
-                <DropdownMenuItem className="flex items-center gap-3 opacity-60">
-                  <div className="flex size-8 items-center justify-center rounded-md border">
-                    <Building2 className="text-muted-foreground size-4" />
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-sm font-medium">Kolhapur Sizing-II</span>
-                    <span className="text-xs text-muted-foreground">{t("unitStatusPlanning", "Planning Phase")}</span>
-                  </div>
+
+                <DropdownMenuGroup className="space-y-1 my-1">
+                  {tenants.map((tenant) => {
+                    const isCurrent = tenant.id === activeTenantId;
+                    return (
+                      <DropdownMenuItem
+                        key={tenant.id}
+                        onClick={() => handleTenantSwitch(tenant.id)}
+                        className={`flex items-center justify-between gap-3 p-2.5 rounded-lg cursor-pointer ${
+                          isCurrent ? "bg-emerald-500/10 text-emerald-900 dark:text-emerald-200 font-semibold" : ""
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <span className="text-lg">{tenant.logo}</span>
+                          <div className="flex flex-col min-w-0">
+                            <span className="text-sm truncate">{tenant.name}</span>
+                            <span className="text-[11px] text-muted-foreground truncate">{tenant.cluster}</span>
+                          </div>
+                        </div>
+                        {isCurrent ? (
+                          <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                        ) : (
+                          <span className="text-[10px] font-mono text-muted-foreground shrink-0">{tenant.factoryDetails.totalLooms} Looms</span>
+                        )}
+                      </DropdownMenuItem>
+                    );
+                  })}
+                </DropdownMenuGroup>
+
+                {activeTenant.units.length > 0 && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuLabel className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-2 py-1">
+                      Active Tenant Sheds / Units ({activeTenant.name})
+                    </DropdownMenuLabel>
+                    <DropdownMenuGroup className="space-y-1 my-1">
+                      {activeTenant.units.map((unit) => {
+                        const isUnitCurrent = unit.id === activeUnitId;
+                        return (
+                          <DropdownMenuItem
+                            key={unit.id}
+                            onClick={() => handleUnitSwitch(unit.id)}
+                            className={`flex items-center justify-between gap-2 p-2 rounded-lg cursor-pointer text-xs ${
+                              isUnitCurrent ? "bg-accent font-medium text-foreground" : "text-muted-foreground"
+                            }`}
+                          >
+                            <div className="flex items-center gap-2 truncate">
+                              <Factory className="h-3.5 w-3.5 shrink-0" />
+                              <span className="truncate">{unit.name}</span>
+                            </div>
+                            {isUnitCurrent && <Check className="h-3.5 w-3.5 text-emerald-500 shrink-0" />}
+                          </DropdownMenuItem>
+                        );
+                      })}
+                    </DropdownMenuGroup>
+                  </>
+                )}
+
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => router.push("/dashboard/masters/tenants")}
+                  className="flex items-center gap-2 p-2 text-xs font-medium text-emerald-600 dark:text-emerald-400 cursor-pointer"
+                >
+                  <Plus className="h-4 w-4" />
+                  <span>Register & Manage Tenant Mills</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -97,20 +181,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </ScrollArea>
       </SidebarContent>
       <SidebarFooter>
-        {/* <Card className="gap-4 overflow-hidden py-3 group-data-[collapsible=icon]:hidden border-emerald-500/10 bg-emerald-500/[0.02]">
-          <CardHeader className="px-3 pb-2 pt-1">
-            <CardTitle className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-600 flex items-center gap-1.5">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-              </span>
-              {t("millLiveFeedTitle", "Mill Live Feed")}
-            </CardTitle>
-            <CardDescription className="text-[11px] leading-relaxed text-muted-foreground mt-1">
-              {t("millLiveFeedDesc", "Ichalkaranji Unit-I running. Active Weavers in shift: 18. Speed: 680 RPM.")}
-            </CardDescription>
-          </CardHeader>
-        </Card> */}
         <NavUser />
       </SidebarFooter>
     </Sidebar>
