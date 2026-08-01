@@ -6,24 +6,18 @@ import {
   Factory,
   Check,
   Plus,
-  ShieldCheck,
   Crown,
   Search,
   Eye,
   Edit,
   Trash2,
-  AlertCircle,
-  TrendingUp,
   Cpu,
-  Coins,
   MapPin,
   Mail,
   Phone,
   FileText,
   UserCheck,
   MoreVertical,
-  ExternalLink,
-  Sparkles,
   ArrowUpRight
 } from "lucide-react";
 import { toast } from "sonner";
@@ -426,8 +420,8 @@ export default function SuperAdminPortalPage() {
                             t.status === "Active"
                               ? "bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-500/30"
                               : t.status === "Trial"
-                              ? "bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/30"
-                              : "bg-rose-500/20 text-rose-700 dark:text-rose-300 border-rose-500/30"
+                                ? "bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/30"
+                                : "bg-rose-500/20 text-rose-700 dark:text-rose-300 border-rose-500/30"
                           }
                         >
                           {t.status}

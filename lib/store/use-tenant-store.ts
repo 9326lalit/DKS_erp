@@ -12,11 +12,20 @@ export interface TenantUnit {
   totalLooms: number;
 }
 
+export type UserRole =
+  | "Global Super Admin"
+  | "Super Admin"
+  | "Owner"
+  | "Mill Manager"
+  | "Production Head"
+  | "Accountant"
+  | "Supervisor";
+
 export interface TenantUser {
   id: string;
   name: string;
   email: string;
-  role: "Global Super Admin" | "Super Admin" | "Owner" | "Mill Manager" | "Production Head" | "Accountant" | "Supervisor";
+  role: UserRole;
   avatarUrl: string;
   phone: string;
 }
@@ -37,6 +46,66 @@ export interface Tenant {
   units: TenantUnit[];
   users: TenantUser[];
 }
+
+export interface RolePermissionConfig {
+  role: UserRole;
+  title: string;
+  badgeColor: string;
+  allowedNavGroupTitles: string[];
+  description: string;
+}
+
+export const ROLE_PERMISSIONS: Record<UserRole, RolePermissionConfig> = {
+  "Global Super Admin": {
+    role: "Global Super Admin",
+    title: "Global Platform Super Admin",
+    badgeColor: "bg-amber-500 text-slate-950 font-bold border-amber-400",
+    allowedNavGroupTitles: ["SaaS Control Center", "Operations"],
+    description: "Essential SaaS Access: Platform Dashboard, Global Factory Sheds, SaaS Subscriptions & System Audit Logs."
+  },
+  "Super Admin": {
+    role: "Super Admin",
+    title: "Mill Owner / Super Admin",
+    badgeColor: "bg-emerald-600 text-white font-bold border-emerald-500",
+    allowedNavGroupTitles: ["Operations", "Master Data", "Yarn (Tana & Bana)", "Weaving & Production", "Procurement & Sizing", "Financials & Reports"],
+    description: "Complete Mill Access: Master Registries, Factory Sheds, Yarn Purchasing, Production, Financials & Business Setup."
+  },
+  "Owner": {
+    role: "Owner",
+    title: "Mill Owner",
+    badgeColor: "bg-emerald-600 text-white font-bold border-emerald-500",
+    allowedNavGroupTitles: ["Operations", "Master Data", "Yarn (Tana & Bana)", "Weaving & Production", "Procurement & Sizing", "Financials & Reports"],
+    description: "Complete Mill Access: Master Registries, Factory Sheds, Yarn Purchasing, Production, Financials & Business Setup."
+  },
+  "Mill Manager": {
+    role: "Mill Manager",
+    title: "Plant / Mill Manager",
+    badgeColor: "bg-blue-600 text-white font-bold border-blue-500",
+    allowedNavGroupTitles: ["Operations", "Master Data", "Yarn (Tana & Bana)", "Weaving & Production", "Procurement & Sizing"],
+    description: "Operations & Inventory Access: Looms, Beams, Yarn Lots, Sizing Batches, Labour Staff & Goods Receipts (GRN)."
+  },
+  "Production Head": {
+    role: "Production Head",
+    title: "Head of Production / Jobber",
+    badgeColor: "bg-indigo-600 text-white font-bold border-indigo-500",
+    allowedNavGroupTitles: ["Operations", "Master Data", "Weaving & Production"],
+    description: "Floor Production Access: Loom Speeds (RPM), Shift Output, Beam Mounting, Warp/Weft Defect Logging & Weavers."
+  },
+  "Supervisor": {
+    role: "Supervisor",
+    title: "Shift Supervisor",
+    badgeColor: "bg-purple-600 text-white font-bold border-purple-500",
+    allowedNavGroupTitles: ["Operations", "Weaving & Production"],
+    description: "Shift Monitoring Access: Daily Weaving Records, Shift Output, Worker Attendance & Loom Stop Tracking."
+  },
+  "Accountant": {
+    role: "Accountant",
+    title: "Mill Accountant",
+    badgeColor: "bg-teal-600 text-white font-bold border-teal-500",
+    allowedNavGroupTitles: ["Operations", "Master Data", "Financials & Reports"],
+    description: "Financial Control Access: Invoices, Sales Billing, Expenses, Electricity Charges & GST Tax Filings."
+  }
+};
 
 export const GLOBAL_SUPER_ADMIN_USER: TenantUser = {
   id: "global-super-admin-01",
@@ -145,12 +214,28 @@ export const SEED_TENANTS: Tenant[] = [
         phone: "+91 98230 11223"
       },
       {
-        id: "user-1b",
-        name: "Sanjay Jobber",
-        email: "jobber@dhandaitextiles.com",
-        role: "Supervisor",
+        id: "user-1-mgr",
+        name: "Sumit Patil",
+        email: "manager@dhandaitextiles.com",
+        role: "Mill Manager",
         avatarUrl: "/images/avatars/02.png",
+        phone: "+91 98230 44551"
+      },
+      {
+        id: "user-1-prd",
+        name: "Sanjay Jobber",
+        email: "production@dhandaitextiles.com",
+        role: "Production Head",
+        avatarUrl: "/images/avatars/03.png",
         phone: "+91 98230 44556"
+      },
+      {
+        id: "user-1-act",
+        name: "Aniket Gaikwad",
+        email: "accountant@dhandaitextiles.com",
+        role: "Accountant",
+        avatarUrl: "/images/avatars/04.png",
+        phone: "+91 98230 44599"
       }
     ]
   },
@@ -231,9 +316,33 @@ export const SEED_TENANTS: Tenant[] = [
         id: "user-2",
         name: "Rajesh Shah",
         email: "admin@royalfabrics.com",
-        role: "Mill Manager",
+        role: "Super Admin",
         avatarUrl: "/images/avatars/03.png",
         phone: "+91 98980 22334"
+      },
+      {
+        id: "user-2-mgr",
+        name: "Jignesh Patel",
+        email: "manager@royalfabrics.com",
+        role: "Mill Manager",
+        avatarUrl: "/images/avatars/02.png",
+        phone: "+91 98980 22335"
+      },
+      {
+        id: "user-2-prd",
+        name: "Ketan Solanki",
+        email: "production@royalfabrics.com",
+        role: "Production Head",
+        avatarUrl: "/images/avatars/04.png",
+        phone: "+91 98980 22336"
+      },
+      {
+        id: "user-2-act",
+        name: "Hardik Trivedi",
+        email: "accountant@royalfabrics.com",
+        role: "Accountant",
+        avatarUrl: "/images/avatars/05.png",
+        phone: "+91 98980 22337"
       }
     ]
   },
@@ -255,7 +364,7 @@ export const SEED_TENANTS: Tenant[] = [
       businessType: "Partnership",
       industry: "Heavy Denim & Canvas",
       phone: "+91 97654 33221",
-      email: "manager@silverthread.com",
+      email: "owner@silverthread.com",
       website: "www.silverthreaddenim.com",
       addressLine1: "Shed 12, Sonale Warehousing Complex",
       addressLine2: "Bhiwandi Bypass",
@@ -280,7 +389,7 @@ export const SEED_TENANTS: Tenant[] = [
       pincode: "421302",
       factoryManager: "Amit Patel",
       phone: "+91 97654 33221",
-      email: "manager@silverthread.com",
+      email: "owner@silverthread.com",
       workingHours: "24 Hours Continuous",
       shiftSystem: "2-Shift System (12 Hours each)",
       morningShiftStart: "08:00 AM",
@@ -313,10 +422,34 @@ export const SEED_TENANTS: Tenant[] = [
       {
         id: "user-3",
         name: "Amit Patel",
-        email: "manager@silverthread.com",
-        role: "Production Head",
+        email: "owner@silverthread.com",
+        role: "Super Admin",
         avatarUrl: "/images/avatars/04.png",
         phone: "+91 97654 33221"
+      },
+      {
+        id: "user-3-mgr",
+        name: "Deepak Sharma",
+        email: "manager@silverthread.com",
+        role: "Mill Manager",
+        avatarUrl: "/images/avatars/01.png",
+        phone: "+91 97654 33222"
+      },
+      {
+        id: "user-3-prd",
+        name: "Rakesh Verma",
+        email: "production@silverthread.com",
+        role: "Production Head",
+        avatarUrl: "/images/avatars/02.png",
+        phone: "+91 97654 33223"
+      },
+      {
+        id: "user-3-act",
+        name: "Manoj Gupta",
+        email: "accountant@silverthread.com",
+        role: "Accountant",
+        avatarUrl: "/images/avatars/05.png",
+        phone: "+91 97654 33224"
       }
     ]
   },
@@ -409,6 +542,30 @@ export const SEED_TENANTS: Tenant[] = [
         role: "Super Admin",
         avatarUrl: "/images/avatars/05.png",
         phone: "+91 94430 88776"
+      },
+      {
+        id: "user-4-mgr",
+        name: "Karthik Subramanian",
+        email: "manager@mahadevweaving.com",
+        role: "Mill Manager",
+        avatarUrl: "/images/avatars/01.png",
+        phone: "+91 94430 88777"
+      },
+      {
+        id: "user-4-prd",
+        name: "Ramesh Natarajan",
+        email: "production@mahadevweaving.com",
+        role: "Production Head",
+        avatarUrl: "/images/avatars/02.png",
+        phone: "+91 94430 88778"
+      },
+      {
+        id: "user-4-act",
+        name: "Sundar Rajan",
+        email: "accountant@mahadevweaving.com",
+        role: "Accountant",
+        avatarUrl: "/images/avatars/03.png",
+        phone: "+91 94430 88779"
       }
     ]
   }
@@ -426,7 +583,8 @@ interface TenantState {
   // Actions
   setActiveTenant: (tenantId: string) => void;
   setActiveUnit: (unitId: string) => void;
-  login: (email: string, password?: string) => { success: boolean; tenantName?: string; isSuperAdmin?: boolean; error?: string };
+  switchRole: (role: UserRole) => void;
+  login: (email: string, password?: string) => { success: boolean; tenantName?: string; isSuperAdmin?: boolean; role?: UserRole; error?: string };
   loginSuperAdmin: () => void;
   logout: () => void;
   addTenant: (tenant: Tenant) => void;
@@ -473,6 +631,34 @@ export const useTenantStore = create<TenantState>()(
         set({ activeUnitId: unitId });
       },
 
+      switchRole: (newRole: UserRole) => {
+        if (newRole === "Global Super Admin") {
+          get().loginSuperAdmin();
+          return;
+        }
+
+        const { activeTenantId, tenants } = get();
+        const currentTenant = tenants.find((t) => t.id === activeTenantId) || tenants[0];
+        const matchingUser = currentTenant.users.find((u) => u.role === newRole);
+
+        if (matchingUser) {
+          set({ currentUser: matchingUser, isGlobalSuperAdmin: false });
+        } else {
+          // Synthesize user for role
+          set({
+            currentUser: {
+              id: `role-user-${newRole.toLowerCase().replace(/[^a-z]/g, "")}`,
+              name: `${currentTenant.businessDetails.ownerName} (${newRole})`,
+              email: `${newRole.toLowerCase().replace(/[^a-z]/g, "")}@${currentTenant.slug}.com`,
+              role: newRole,
+              avatarUrl: "/images/avatars/01.png",
+              phone: currentTenant.businessDetails.phone
+            },
+            isGlobalSuperAdmin: false
+          });
+        }
+      },
+
       loginSuperAdmin: () => {
         set({
           currentUser: GLOBAL_SUPER_ADMIN_USER,
@@ -489,7 +675,7 @@ export const useTenantStore = create<TenantState>()(
         // Check for Global Super Admin login
         if (normalized === "superadmin@dks-erp.com" || normalized === "superadmin") {
           get().loginSuperAdmin();
-          return { success: true, tenantName: "Global SaaS Control Center", isSuperAdmin: true };
+          return { success: true, tenantName: "Global SaaS Control Center", isSuperAdmin: true, role: "Global Super Admin" };
         }
 
         let targetTenant: Tenant | undefined;
@@ -510,7 +696,11 @@ export const useTenantStore = create<TenantState>()(
           else if (normalized.includes("mahadev")) targetTenant = get().tenants.find((t) => t.id === "mahadev-weaving");
           else targetTenant = get().tenants[0];
 
-          targetUser = targetTenant?.users[0];
+          // Check if specific role was passed in email prefix
+          if (normalized.includes("manager")) targetUser = targetTenant?.users.find((u) => u.role === "Mill Manager");
+          else if (normalized.includes("production")) targetUser = targetTenant?.users.find((u) => u.role === "Production Head");
+          else if (normalized.includes("accountant")) targetUser = targetTenant?.users.find((u) => u.role === "Accountant");
+          else targetUser = targetTenant?.users[0];
         }
 
         if (targetTenant && targetUser) {
@@ -529,7 +719,7 @@ export const useTenantStore = create<TenantState>()(
           erpStore.setFactoryDetails(targetTenant.factoryDetails);
           erpStore.setFinancialYearDetails(targetTenant.financialYearDetails);
 
-          return { success: true, tenantName: targetTenant.name, isSuperAdmin: false };
+          return { success: true, tenantName: targetTenant.name, isSuperAdmin: false, role: targetUser.role };
         }
 
         return { success: false, error: "Invalid credentials" };

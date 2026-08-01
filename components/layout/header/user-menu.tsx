@@ -1,6 +1,6 @@
 "use client";
 
-import { BadgeCheck, Building2, ChevronRightIcon, LogOut, ShieldCheck, Sparkles, Factory } from "lucide-react";
+import { BadgeCheck, Building2, ChevronRightIcon, LogOut, ShieldCheck, Sparkles, Factory, UserCheck, Crown } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -9,23 +9,42 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuTrigger
+  DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useTenantStore } from "@/lib/store/use-tenant-store";
+import { useTenantStore, UserRole, ROLE_PERMISSIONS } from "@/lib/store/use-tenant-store";
 import { toast } from "sonner";
 
 export default function UserMenu() {
   const router = useRouter();
-  const { currentUser, tenants, activeTenantId, logout } = useTenantStore();
+  const { currentUser, tenants, activeTenantId, switchRole, logout } = useTenantStore();
   const activeTenant = tenants.find((t) => t.id === activeTenantId) || tenants[0];
 
   const name = currentUser?.name || activeTenant.businessDetails.ownerName || "Mill Owner";
   const email = currentUser?.email || activeTenant.businessDetails.email || "admin@textilerp.com";
   const role = currentUser?.role || "Super Admin";
   const avatar = currentUser?.avatarUrl || "/images/avatars/01.png";
+
+  const rolesList: UserRole[] = [
+    "Global Super Admin",
+    "Super Admin",
+    "Mill Manager",
+    "Production Head",
+    "Accountant"
+  ];
+
+  const handleRoleSwitch = (newRole: UserRole) => {
+    switchRole(newRole);
+    toast.success(`Switched Active Role to: ${newRole}`);
+    if (newRole === "Global Super Admin") {
+      router.push("/dashboard/super-admin");
+    }
+  };
 
   const handleLogout = () => {
     logout();
@@ -59,24 +78,56 @@ export default function UserMenu() {
                 <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
                   {activeTenant.name}
                 </Badge>
-                <span className="text-[10px] text-muted-foreground">• {role}</span>
+                <span className="text-[10px] text-muted-foreground font-semibold">• {role}</span>
               </div>
             </div>
           </div>
         </DropdownMenuLabel>
+
         <DropdownMenuSeparator />
+
         <DropdownMenuGroup>
-          <DropdownMenuItem onClick={() => router.push("/dashboard/masters/tenants")} className="cursor-pointer">
+          <DropdownMenuSub>
+            <DropdownMenuSubTrigger className="cursor-pointer text-xs flex items-center gap-2">
+              <UserCheck className="h-4 w-4 text-blue-500" />
+              <span>Switch Testing Role ({role})</span>
+            </DropdownMenuSubTrigger>
+            <DropdownMenuSubContent className="w-56 p-1 rounded-xl">
+              <DropdownMenuLabel className="text-[10px] text-muted-foreground uppercase font-bold px-2 py-1">
+                Select Active Role
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {rolesList.map((r) => {
+                const isSelected = r === role;
+                return (
+                  <DropdownMenuItem
+                    key={r}
+                    onClick={() => handleRoleSwitch(r)}
+                    className={`text-xs flex items-center justify-between cursor-pointer ${
+                      isSelected ? "bg-emerald-500/10 font-bold text-emerald-900 dark:text-emerald-200" : ""
+                    }`}
+                  >
+                    <span>{r}</span>
+                    {r === "Global Super Admin" && <Crown className="h-3.5 w-3.5 text-amber-500" />}
+                  </DropdownMenuItem>
+                );
+              })}
+            </DropdownMenuSubContent>
+          </DropdownMenuSub>
+
+          <DropdownMenuItem onClick={() => router.push("/dashboard/masters/tenants")} className="cursor-pointer text-xs">
             <Building2 className="h-4 w-4 text-emerald-500" />
             <span>Manage Tenant Mills ({tenants.length})</span>
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => router.push("/dashboard/masters")} className="cursor-pointer">
+          <DropdownMenuItem onClick={() => router.push("/dashboard/masters")} className="cursor-pointer text-xs">
             <ShieldCheck className="h-4 w-4" />
             <span>Mill Business Settings</span>
           </DropdownMenuItem>
         </DropdownMenuGroup>
+
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={handleLogout} className="text-rose-600 dark:text-rose-400 cursor-pointer">
+        
+        <DropdownMenuItem onClick={handleLogout} className="text-rose-600 dark:text-rose-400 cursor-pointer text-xs">
           <LogOut className="h-4 w-4" />
           <span>Log out</span>
         </DropdownMenuItem>

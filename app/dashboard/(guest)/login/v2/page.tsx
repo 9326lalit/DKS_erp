@@ -125,7 +125,7 @@ export default function Page() {
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
                     <Sparkles className="h-3.5 w-3.5 text-amber-400" />
-                    Quick 1-Click Multi-Tenant Testing
+                    Role-Based Access Testing (1-Click Login)
                   </span>
                   <span className="text-[11px] text-slate-500">Password: password123</span>
                 </div>
@@ -146,7 +146,7 @@ export default function Page() {
                     </div>
                     <div className="flex flex-col">
                       <span className="text-sm font-bold text-amber-200 flex items-center gap-1.5">
-                        Global Super Admin Portal <Badge className="bg-amber-500 text-slate-950 text-[10px] font-extrabold">FULL ACCESS</Badge>
+                        Global Super Admin Portal <Badge className="bg-amber-500 text-slate-950 text-[10px] font-extrabold">FULL SAAS ACCESS</Badge>
                       </span>
                       <span className="text-xs text-slate-400">superadmin@dks-erp.com • View & Manage All 4 Tenant Businesses</span>
                     </div>
@@ -155,6 +155,50 @@ export default function Page() {
                     Control Center →
                   </span>
                 </button>
+
+                {/* Role Quick Selector Buttons */}
+                <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 space-y-2">
+                  <span className="text-[11px] font-bold text-slate-300 uppercase tracking-wider block">
+                    Dhandai Textiles — Test Specific Roles:
+                  </span>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => handleQuickTenantLogin("owner@dhandaitextiles.com", "password123")}
+                      className="p-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 text-left text-xs cursor-pointer"
+                    >
+                      <div className="font-bold">Super Admin</div>
+                      <div className="text-[9px] opacity-75 truncate">owner@...</div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleQuickTenantLogin("manager@dhandaitextiles.com", "password123")}
+                      className="p-1.5 rounded-lg border border-blue-500/30 bg-blue-500/10 hover:bg-blue-500/20 text-blue-300 text-left text-xs cursor-pointer"
+                    >
+                      <div className="font-bold">Mill Manager</div>
+                      <div className="text-[9px] opacity-75 truncate">manager@...</div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleQuickTenantLogin("production@dhandaitextiles.com", "password123")}
+                      className="p-1.5 rounded-lg border border-indigo-500/30 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 text-left text-xs cursor-pointer"
+                    >
+                      <div className="font-bold">Production</div>
+                      <div className="text-[9px] opacity-75 truncate">production@...</div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleQuickTenantLogin("accountant@dhandaitextiles.com", "password123")}
+                      className="p-1.5 rounded-lg border border-teal-500/30 bg-teal-500/10 hover:bg-teal-500/20 text-teal-300 text-left text-xs cursor-pointer"
+                    >
+                      <div className="font-bold">Accountant</div>
+                      <div className="text-[9px] opacity-75 truncate">accountant@...</div>
+                    </button>
+                  </div>
+                </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                   {tenants.map((t) => {

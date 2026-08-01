@@ -1,0 +1,181 @@
+"use client";
+
+import React, { useState } from "react";
+import { Factory, Building2, MapPin, Cpu, CheckCircle2, ShieldCheck, Search, Eye, ArrowUpRight } from "lucide-react";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+import { useTenantStore } from "@/lib/store/use-tenant-store";
+import { PageContainer } from "@/components/textile-erp/page-container";
+import { PageHeader } from "@/components/textile-erp/page-header";
+import { StatsCard } from "@/components/textile-erp/stats-card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+
+export default function GlobalFactoriesPage() {
+  const router = useRouter();
+  const { tenants, activeTenantId, setActiveTenant } = useTenantStore();
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const allUnits = tenants.flatMap((t) =>
+    t.units.map((u) => ({
+      ...u,
+      tenantId: t.id,
+      tenantName: t.name,
+      tenantLogo: t.logo,
+      cluster: t.cluster,
+      factoryDetails: t.factoryDetails
+    }))
+  );
+
+  const filteredUnits = allUnits.filter((u) => {
+    const q = searchQuery.toLowerCase();
+    return (
+      u.name.toLowerCase().includes(q) ||
+      u.tenantName.toLowerCase().includes(q) ||
+      u.location.toLowerCase().includes(q) ||
+      u.type.toLowerCase().includes(q)
+    );
+  });
+
+  const totalLooms = tenants.reduce((sum, t) => sum + t.factoryDetails.totalLooms, 0);
+
+  return (
+    <PageContainer>
+      <PageHeader
+        title="Global Factories & Weaving Sheds Registry"
+        description="Cross-tenant overview of all registered manufacturing plants, weaving sheds, & sizing units."
+      />
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <StatsCard
+          title="Total Registered Sheds"
+          value={allUnits.length}
+          description="Operational & Planning"
+          icon={Factory}
+          trend={{ value: 100, label: "Active Units", direction: "up" }}
+        />
+        <StatsCard
+          title="Global Installed Capacity"
+          value={`${totalLooms} Looms`}
+          description="Airjet, Rapier & Jacquard"
+          icon={Cpu}
+          trend={{ value: 100, label: "Capacity", direction: "up" }}
+        />
+        <StatsCard
+          title="Textile Clusters"
+          value={new Set(tenants.map((t) => t.cluster)).size}
+          description="Ichalkaranji, Surat, Bhiwandi..."
+          icon={MapPin}
+          trend={{ value: 100, label: "Regions", direction: "neutral" }}
+        />
+      </div>
+
+      <Card className="border border-border">
+        <CardHeader className="pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <CardTitle className="text-lg font-bold flex items-center gap-2">
+              <Factory className="h-5 w-5 text-indigo-500" /> All Global Manufacturing Sheds & Units
+            </CardTitle>
+            <CardDescription className="text-xs">
+              Review factory configurations, shift systems, and installed loom counts per unit.
+            </CardDescription>
+          </div>
+
+          <div className="relative w-full sm:w-72">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search by factory name, mill..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-8 text-xs h-9"
+            />
+          </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/50 text-xs">
+                  <TableHead className="font-bold">Unit / Shed Name</TableHead>
+                  <TableHead className="font-bold">Parent Tenant Mill</TableHead>
+                  <TableHead className="font-bold">Unit Type</TableHead>
+                  <TableHead className="font-bold">Location</TableHead>
+                  <TableHead className="font-bold">Capacity</TableHead>
+                  <TableHead className="font-bold">Shift System</TableHead>
+                  <TableHead className="font-bold">Status</TableHead>
+                  <TableHead className="text-right font-bold">Action</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredUnits.map((u) => {
+                  const isCurrent = u.tenantId === activeTenantId;
+                  return (
+                    <TableRow key={u.id} className={isCurrent ? "bg-emerald-500/5 font-medium" : ""}>
+                      <TableCell className="py-3">
+                        <div className="flex flex-col">
+                          <span className="font-bold text-sm text-foreground flex items-center gap-1.5">
+                            {u.name}
+                            <Badge variant="outline" className="text-[9px] px-1 py-0">{u.code}</Badge>
+                          </span>
+                          <span className="text-xs text-muted-foreground">{u.location}</span>
+                        </div>
+                      </TableCell>
+
+                      <TableCell className="py-3 text-xs">
+                        <div className="flex items-center gap-2">
+                          <span className="text-lg">{u.tenantLogo}</span>
+                          <span className="font-semibold text-foreground">{u.tenantName}</span>
+                        </div>
+                      </TableCell>
+
+                      <TableCell className="py-3 text-xs">
+                        <Badge variant="secondary" className="bg-slate-100 dark:bg-slate-800 text-foreground text-[11px]">
+                          {u.type}
+                        </Badge>
+                      </TableCell>
+
+                      <TableCell className="py-3 text-xs text-muted-foreground">
+                        {u.cluster}
+                      </TableCell>
+
+                      <TableCell className="py-3 text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                        {u.totalLooms > 0 ? `${u.totalLooms} Looms` : "Support Unit"}
+                      </TableCell>
+
+                      <TableCell className="py-3 text-xs text-muted-foreground">
+                        {u.factoryDetails.shiftSystem || "24 Hours"}
+                      </TableCell>
+
+                      <TableCell className="py-3 text-xs">
+                        <Badge className={u.status === "Operational" ? "bg-emerald-500/20 text-emerald-600 border-emerald-500/30" : "bg-amber-500/20 text-amber-600"}>
+                          {u.status}
+                        </Badge>
+                      </TableCell>
+
+                      <TableCell className="py-3 text-right">
+                        <Button
+                          size="sm"
+                          onClick={() => {
+                            setActiveTenant(u.tenantId);
+                            toast.success(`Impersonating ${u.tenantName} - ${u.name}`);
+                            router.push("/dashboard");
+                          }}
+                          className="h-8 text-xs bg-emerald-600 hover:bg-emerald-500 text-white gap-1 cursor-pointer"
+                        >
+                          <ArrowUpRight className="h-3.5 w-3.5" /> Open Mill →
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+    </PageContainer>
+  );
+}

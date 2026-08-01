@@ -63,18 +63,38 @@ type NavItem = {
 
 export const navItems: NavGroup[] = [
   {
+    title: "SaaS Control Center",
+    items: [
+      {
+        title: "Platform Overview",
+        href: "/dashboard/super-admin",
+        icon: Crown,
+        isNew: true
+      },
+      {
+        title: "Global Factory Sheds",
+        href: "/dashboard/super-admin/factories",
+        icon: Factory
+      },
+      {
+        title: "SaaS Subscriptions",
+        href: "/dashboard/super-admin/subscriptions",
+        icon: ShoppingCart
+      },
+      {
+        title: "Platform Audit Logs",
+        href: "/dashboard/super-admin/audit-logs",
+        icon: FileText
+      }
+    ]
+  },
+  {
     title: "Operations",
     items: [
       {
         title: "Dashboard",
         href: "/dashboard/default",
         icon: LayoutDashboard
-      },
-      {
-        title: "Super Admin Portal",
-        href: "/dashboard/super-admin",
-        icon: Crown,
-        isNew: true
       }
     ]
   },
@@ -255,10 +275,29 @@ const itemTranslationMap: Record<string, string> = {
   "Pipes Information": "navPipesInformation"
 };
 
+import { useTenantStore, ROLE_PERMISSIONS } from "@/lib/store/use-tenant-store";
+
 export function NavMain() {
   const pathname = usePathname();
   const { isMobile } = useSidebar();
   const { t } = useLanguage();
+  const { currentUser, isGlobalSuperAdmin } = useTenantStore();
+
+  const role = currentUser?.role || "Super Admin";
+  const roleConfig = ROLE_PERMISSIONS[role];
+  const allowedGroupTitles = roleConfig ? roleConfig.allowedNavGroupTitles : [];
+
+  const filteredNavGroups = navItems
+    .filter((group) => allowedGroupTitles.includes(group.title))
+    .map((group) => ({
+      ...group,
+      items: group.items.filter((item) => {
+        if (item.href === "/dashboard/super-admin" && !isGlobalSuperAdmin) {
+          return false;
+        }
+        return true;
+      })
+    }));
 
   const getGroupTitle = (title: string) => {
     const key = groupTranslationMap[title];
@@ -283,7 +322,7 @@ export function NavMain() {
 
   return (
     <>
-      {navItems.map((nav) => (
+      {filteredNavGroups.map((nav) => (
         <SidebarGroup key={nav.title}>
           <SidebarGroupLabel>{getGroupTitle(nav.title)}</SidebarGroupLabel>
           <SidebarGroupContent className="flex flex-col gap-0.5">

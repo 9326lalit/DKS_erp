@@ -41,13 +41,21 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
+import { useTenantStore, ROLE_PERMISSIONS, UserRole } from "@/lib/store/use-tenant-store";
+import { UserCheck, ShieldCheck, Crown, Users } from "lucide-react";
+
 export default function DashboardPage() {
   const { businessDetails, factoryDetails, financialYearDetails } = useERPStore();
+  const { currentUser, tenants, activeTenantId, switchRole, isGlobalSuperAdmin } = useTenantStore();
+  const activeTenant = tenants.find((t) => t.id === activeTenantId) || tenants[0];
   const [refreshCount, setRefreshCount] = useState(0);
+
+  const role = currentUser?.role || "Super Admin";
+  const roleConfig = ROLE_PERMISSIONS[role];
 
   // Fetch live dashboard aggregates using TanStack Query
   const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ["dashboardData", refreshCount],
+    queryKey: ["dashboardData", refreshCount, activeTenantId],
     queryFn: () => mockApiService.getDashboard()
   });
 
@@ -88,12 +96,14 @@ export default function DashboardPage() {
     }).format(val);
   };
 
+  const testRoles: UserRole[] = ["Super Admin", "Mill Manager", "Production Head", "Accountant", "Global Super Admin"];
+
   return (
     <PageContainer>
       {/* Top Banner Header */}
       <PageHeader
-        title={`${businessDetails?.businessName || "Khairnar Textile"} - Manufacturing Control`}
-        description={`Weaving Unit: ${factoryDetails?.factoryName || "Ichalkaranji Unit-I"} | Active Looms: ${factoryDetails?.totalLooms || 36} | Fiscal: FY ${financialYearDetails?.financialYear || "2026-27"}`}
+        title={`${businessDetails?.businessName || "Textile Mill"} - Manufacturing Control`}
+        description={`Weaving Unit: ${factoryDetails?.factoryName || "Unit-I"} | Active Looms: ${factoryDetails?.totalLooms || 24} | Fiscal: FY ${financialYearDetails?.financialYear || "2026-27"}`}
         actions={
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={handleRefresh} className="h-9 gap-1.5 cursor-pointer">
@@ -106,6 +116,48 @@ export default function DashboardPage() {
           </div>
         }
       />
+
+      {/* Role Access Scope & Quick Role Switcher Banner */}
+      <Card className="border border-emerald-500/20 bg-gradient-to-r from-emerald-500/5 via-slate-900/5 to-transparent">
+        <CardContent className="p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <Badge className={roleConfig?.badgeColor || "bg-emerald-600 text-white"}>
+                {role === "Global Super Admin" ? <Crown className="h-3.5 w-3.5 mr-1" /> : <UserCheck className="h-3.5 w-3.5 mr-1" />}
+                Role: {role}
+              </Badge>
+              <span className="text-xs font-bold text-foreground">
+                Logged in as: {currentUser?.name || "User"} ({currentUser?.email})
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              {roleConfig?.description}
+            </p>
+          </div>
+
+          {/* Quick Role Test Switcher Buttons */}
+          <div className="flex flex-wrap items-center gap-1.5 shrink-0">
+            <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mr-1">Test Role:</span>
+            {testRoles.map((r) => {
+              const isSel = r === role;
+              return (
+                <Button
+                  key={r}
+                  size="sm"
+                  variant={isSel ? "default" : "outline"}
+                  onClick={() => switchRole(r)}
+                  className={`h-7 text-[11px] px-2.5 cursor-pointer ${
+                    isSel ? "bg-emerald-600 hover:bg-emerald-500 text-white font-bold" : "hover:border-emerald-500/40"
+                  }`}
+                >
+                  {r === "Global Super Admin" && <Crown className="h-3 w-3 mr-1 text-amber-400" />}
+                  {r}
+                </Button>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* 1. KPIs Row */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
