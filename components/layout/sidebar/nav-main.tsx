@@ -135,6 +135,11 @@ export const navItems: NavGroup[] = [
         title: "Sizing Master",
         href: "/dashboard/masters/sizing-mills",
         icon: Scissors
+      },
+      {
+        title: "Pipes Information",
+        href: "/dashboard/masters/pipes",
+        icon: Layers
       }
     ]
   },
@@ -171,7 +176,7 @@ export const navItems: NavGroup[] = [
     ]
   },
   {
-    title: "Sizing Module",
+    title: "Procurement & Sizing",
     items: [
       {
         title: "Sizing Batches",
@@ -179,6 +184,7 @@ export const navItems: NavGroup[] = [
         icon: Scissors,
         items: [
           { title: "All Sizing Batches", href: "/dashboard/sizing" },
+          { title: "Sizing Mills Master", href: "/dashboard/masters/sizing-mills" },
           { title: "Pipes Information", href: "/dashboard/sizing/pipes" }
         ]
       }

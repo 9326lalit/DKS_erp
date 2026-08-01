@@ -18,11 +18,15 @@ import {
   Warehouse,
   Calendar,
   FileCheck2,
-  Building2
+  Building2,
+  Scissors,
+  Cylinder
 } from "lucide-react";
+import { useTenantStore } from "@/lib/store/use-tenant-store";
 
 export default function MastersDirectoryPage() {
   const router = useRouter();
+  const { isGlobalSuperAdmin } = useTenantStore();
   const {
     parties,
     yarns,
@@ -36,14 +40,18 @@ export default function MastersDirectoryPage() {
   } = useMastersStore();
 
   const masterModules = [
-    {
-      title: "Multi-Tenant Organizations (Enterprise)",
-      description: "Manage independent textile mill organizations, register new mill tenants, & view testing credentials.",
-      href: "/dashboard/masters/tenants",
-      icon: Building2,
-      count: "4 Active Mills",
-      color: "text-emerald-600 bg-emerald-500/10 border-emerald-500/20"
-    },
+    ...(isGlobalSuperAdmin
+      ? [
+          {
+            title: "Multi-Tenant Directory (SaaS Super Admin)",
+            description: "Manage independent textile mill organizations, register new mill tenants, & view platform accounts.",
+            href: "/dashboard/super-admin/tenants",
+            icon: Building2,
+            count: "SaaS Admin",
+            color: "text-amber-600 bg-amber-500/10 border-amber-500/20"
+          }
+        ]
+      : []),
     {
       title: "Open Stock Master (Admin Master)",
       description: "Unified admin master for Tana Open Stock Sets, Sizing Mill allocations, yarn ends, pipe specs, and live set details.",
@@ -51,6 +59,22 @@ export default function MastersDirectoryPage() {
       icon: Database,
       count: "Admin Master",
       color: "text-primary bg-primary/10 border-primary/20"
+    },
+    {
+      title: "Sizing Mills Master",
+      description: "Register external sizing jobworkers, processing contracts, sizing rates per kg, & warp sizing terms.",
+      href: "/dashboard/masters/sizing-mills",
+      icon: Scissors,
+      count: "Jobwork Master",
+      color: "text-emerald-600 bg-emerald-500/10 border-emerald-500/20"
+    },
+    {
+      title: "Pipes Information (Beam Pipes Master)",
+      description: "Track perforated sizing beam pipes, tare weights, loom mounting status, and warp yarn set allocations.",
+      href: "/dashboard/masters/pipes",
+      icon: Layers,
+      count: "Beam Inventory",
+      color: "text-purple-600 bg-purple-500/10 border-purple-500/20"
     },
     {
       title: "Parties (Suppliers/Customers)",
