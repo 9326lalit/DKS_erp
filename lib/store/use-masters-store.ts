@@ -314,7 +314,7 @@ const getInitialSeeds = () => {
       shedType: "RCC",
       noOfFloors: 2,
       contactNumber: "+91 98230 11223",
-      email: "owner@dhandaitextiles.com",
+      email: "bhushan.dks@gmail.com",
       electricityMeterNo: "EB-4521-ICH",
       establishmentDate: "2018-04-01",
       activeStatus: "Active",
@@ -339,7 +339,7 @@ const getInitialSeeds = () => {
       shedType: "Tin",
       noOfFloors: 1,
       contactNumber: "+91 98765 44321",
-      email: "owner@dhandaitextiles.com",
+      email: "bhushan.dks@gmail.com",
       activeStatus: "Active",
       notes: "Secondary rapier weaving shed — 12 looms operational"
     },

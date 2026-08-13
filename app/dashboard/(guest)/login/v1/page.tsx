@@ -16,7 +16,7 @@ import { useTenantStore } from "@/lib/store/use-tenant-store";
 export default function Page() {
   const router = useRouter();
   const { tenants, login, loginSuperAdmin } = useTenantStore();
-  const [email, setEmail] = useState("owner@dhandaitextiles.com");
+  const [email, setEmail] = useState("bhushan.dks@gmail.com");
   const [password, setPassword] = useState("password123");
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -90,7 +90,7 @@ export default function Page() {
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   className="mt-1 bg-slate-900 border-slate-800 text-slate-100 placeholder:text-slate-500"
-                  placeholder="owner@dhandaitextiles.com"
+                  placeholder="bhushan.dks@gmail.com"
                 />
               </div>
               <div>

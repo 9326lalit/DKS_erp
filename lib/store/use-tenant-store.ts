@@ -113,7 +113,7 @@ export const SEED_TENANTS: Tenant[] = [
       industry: "100% Cotton Weaving",
       phone: "+91 98230 11223",
       alternativePhone: "+91 98765 43210",
-      email: "owner@dhandaitextiles.com",
+      email: "bhushan.dks@gmail.com",
       website: "www.dhandaitextiles.com",
       addressLine1: "Plot No. 18, MIDC Industrial Zone",
       addressLine2: "Textile Park",
@@ -141,7 +141,7 @@ export const SEED_TENANTS: Tenant[] = [
       longitude: "74.4649",
       factoryManager: "Bhushan Khairnar",
       phone: "+91 98230 11223",
-      email: "owner@dhandaitextiles.com",
+      email: "bhushan.dks@gmail.com",
       factoryImageUrl: "",
       workingHours: "24 Hours (Continuous Run)",
       shiftSystem: "2-Shift System (12 Hours each)",
@@ -184,7 +184,7 @@ export const SEED_TENANTS: Tenant[] = [
       {
         id: "user-1-owner",
         name: "Bhushan Khairnar",
-        email: "owner@dhandaitextiles.com",
+        email: "bhushan.dks@gmail.com",
         role: "Factory Owner",
         avatarUrl: "/images/avatars/01.png",
         phone: "+91 98230 11223"

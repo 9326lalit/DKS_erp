@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 const INITIAL_AUDIT_LOGS = [
-  { id: "LOG-1092", timestamp: "2026-08-01 19:45:12", tenant: "Dhandai Textiles", action: "Tenant Login", user: "owner@dhandaitextiles.com", ip: "103.24.12.8", status: "Success" },
+  { id: "LOG-1092", timestamp: "2026-08-01 19:45:12", tenant: "Dhandai Textiles", action: "Tenant Login", user: "bhushan.dks@gmail.com", ip: "103.24.12.8", status: "Success" },
   { id: "LOG-1091", timestamp: "2026-08-01 19:30:04", tenant: "Royal Fabrics", action: "Loom Speed Update", user: "admin@royalfabrics.com", ip: "115.110.84.12", status: "Success" },
   { id: "LOG-1090", timestamp: "2026-08-01 19:15:22", tenant: "SilverThread Denim", action: "Yarn Lot Creation", user: "manager@silverthread.com", ip: "49.36.210.45", status: "Success" },
   { id: "LOG-1089", timestamp: "2026-08-01 18:50:11", tenant: "Mahadev Spinning", action: "Export Invoice Dispatched", user: "admin@mahadevweaving.com", ip: "117.200.42.9", status: "Success" },

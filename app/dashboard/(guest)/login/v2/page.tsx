@@ -56,7 +56,7 @@ export default function LoginV2Page() {
   } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: "owner@dhandaitextiles.com",
+      email: "bhushan.dks@gmail.com",
       password: "password123"
     }
   });
@@ -235,7 +235,7 @@ export default function LoginV2Page() {
                       <Input
                         id="email"
                         type="email"
-                        placeholder="owner@dhandaitextiles.com"
+                        placeholder="bhushan.dks@gmail.com"
                         className="pl-10 bg-slate-950/70 border-slate-800 text-slate-100 placeholder:text-slate-600 focus:border-emerald-500 focus:ring-emerald-500/20 h-11 text-xs rounded-xl"
                         {...register("email")}
                       />

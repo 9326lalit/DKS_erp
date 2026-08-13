@@ -39,7 +39,7 @@ async function main() {
       plan: "Enterprise",
       status: "Active",
       ownerName: "Bhushan Khairnar",
-      email: "owner@dhandaitextiles.com",
+      email: "bhushan.dks@gmail.com",
       phone: "+91 98230 11223",
       gstNumber: "27AAIPK1234F1Z5",
       panNumber: "AAIPK1234F",
@@ -57,7 +57,7 @@ async function main() {
       plan: "Enterprise",
       status: "Active",
       ownerName: "Bhushan Khairnar",
-      email: "owner@dhandaitextiles.com",
+      email: "bhushan.dks@gmail.com",
       phone: "+91 98230 11223",
       gstNumber: "27AAIPK1234F1Z5",
       panNumber: "AAIPK1234F",
@@ -69,11 +69,11 @@ async function main() {
   });
 
   await prisma.user.upsert({
-    where: { email: "owner@dhandaitextiles.com" },
+    where: { email: "bhushan.dks@gmail.com" },
     update: { tenantId: dhandai.id, role: Role.BUSINESS_OWNER, name: "Bhushan Khairnar" },
     create: {
       tenantId: dhandai.id,
-      email: "owner@dhandaitextiles.com",
+      email: "bhushan.dks@gmail.com",
       name: "Bhushan Khairnar",
       passwordHash,
       role: Role.BUSINESS_OWNER,
