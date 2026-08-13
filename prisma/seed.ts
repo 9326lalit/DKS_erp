@@ -4,7 +4,16 @@ import bcrypt from "bcryptjs";
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log("Seeding Supabase Postgres Database: 2 Factories & 1 Global Super Admin...");
+  console.log("Resetting & Seeding Supabase Postgres Database: 2 Factories & 1 Global Super Admin...");
+
+  // Wipe existing tables to perform a clean database reset
+  try {
+    await prisma.user.deleteMany({});
+    await prisma.tenant.deleteMany({});
+    console.log("Previous database tables wiped successfully.");
+  } catch (e: any) {
+    console.log("Proceeding with clean seed upsert...");
+  }
 
   const passwordHash = await bcrypt.hash("password123", 10);
 
