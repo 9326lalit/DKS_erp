@@ -208,11 +208,11 @@ const buildBanaSeeds = () => {
   ];
 
   return {
-    purchaseOrders: seededPOs,
-    grns: seededGRNs,
-    invoices: seededPIs,
-    stockBags: 55,
-    stockWeightKg: 2750
+    purchaseOrders: [],
+    grns: [],
+    invoices: [],
+    stockBags: 0,
+    stockWeightKg: 0
   };
 };
 
@@ -273,37 +273,15 @@ export const useBanaStore = create<BanaState>()(
       },
 
       updateGRN: (grn) => {
-        set((state) => {
-          const oldGrn = state.grns.find(g => g.id === grn.id);
-          if (!oldGrn) return {};
-          
-          const bagDiff = grn.bagsReceivedThisGRN - oldGrn.bagsReceivedThisGRN;
-          const weightDiff = grn.totalWeightReceived - oldGrn.totalWeightReceived;
-
-          const updatedPOs = state.purchaseOrders.map((po) => {
-            if (po.id === grn.linkedPOId) {
-              const newTotal = Math.max(0, po.bagsReceivedSoFar + bagDiff);
-              const newStatus: BanaPO["status"] =
-                newTotal >= po.totalBagsOrdered ? "Closed" :
-                newTotal > 0 ? "Partially Received" : "Open";
-              return { ...po, bagsReceivedSoFar: newTotal, status: newStatus };
-            }
-            return po;
-          });
-
-          return {
-            grns: state.grns.map((x) => (x.id === grn.id ? grn : x)),
-            purchaseOrders: updatedPOs,
-            stockBags: Math.max(0, state.stockBags + bagDiff),
-            stockWeightKg: Math.max(0, state.stockWeightKg + weightDiff)
-          };
-        });
+        set((state) => ({
+          grns: state.grns.map((x) => (x.id === grn.id ? grn : x))
+        }));
       },
 
       deleteGRN: (id: string) => {
         set((state) => {
           const grn = state.grns.find((g) => g.id === id);
-          if (!grn) return {};
+          if (!grn) return state;
 
           const updatedPOs = state.purchaseOrders.map((po) => {
             if (po.id === grn.linkedPOId) {
@@ -342,13 +320,11 @@ export const useBanaStore = create<BanaState>()(
         }))
     }),
     {
-      name: "dks-textile-erp-bana",
+      name: "dks-textile-erp-bana-v5",
       onRehydrateStorage: () => (state) => {
         if (state) {
           state.setHydrated(true);
-          if (state.purchaseOrders.length === 0) {
-            state.initializeSeeds();
-          }
+          state.initializeSeeds();
         }
       }
     }

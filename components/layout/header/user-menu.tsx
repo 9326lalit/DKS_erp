@@ -32,10 +32,7 @@ export default function UserMenu() {
 
   const rolesList: UserRole[] = [
     "Global Super Admin",
-    "Super Admin",
-    "Mill Manager",
-    "Production Head",
-    "Accountant"
+    "Factory Owner"
   ];
 
   const handleRoleSwitch = (newRole: UserRole) => {
@@ -46,9 +43,14 @@ export default function UserMenu() {
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } catch (e) {
+      console.error(e);
+    }
     logout();
-    toast.success("Logged out successfully.");
+    toast.success("Logged out successfully. Session cleared.");
     router.push("/dashboard/login/v2");
   };
 

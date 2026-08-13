@@ -63,8 +63,11 @@ const partySchema = z.object({
 
 type PartyFormValues = z.infer<typeof partySchema>;
 
+import { useTenantStore } from "@/lib/store/use-tenant-store";
+
 export default function PartiesPage() {
   const queryClient = useQueryClient();
+  const { activeTenantId } = useTenantStore();
   const [searchValue, setSearchValue] = useState("");
   const [selectedFilters, setSelectedFilters] = useState<Record<string, string>>({ partyType: "all", activeStatus: "all" });
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -74,12 +77,12 @@ export default function PartiesPage() {
   const [deleteTarget, setDeleteTarget] = useState<Party | null>(null);
 
   const { data: parties = [], isLoading } = useQuery({
-    queryKey: ["parties"],
+    queryKey: ["parties", activeTenantId],
     queryFn: () => mastersApiService.getParties()
   });
 
   const { data: factories = [] } = useQuery({
-    queryKey: ["factories"],
+    queryKey: ["factories", activeTenantId],
     queryFn: () => mastersApiService.getFactories()
   });
 

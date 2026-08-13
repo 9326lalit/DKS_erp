@@ -34,9 +34,14 @@ export function NavUser() {
   const role = currentUser?.role || "Super Admin";
   const avatar = currentUser?.avatarUrl || "/images/avatars/01.png";
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } catch (e) {
+      console.error(e);
+    }
     logout();
-    toast.success("Logged out successfully.");
+    toast.success("Logged out successfully. Session cleared.");
     router.push("/dashboard/login/v2");
   };
 

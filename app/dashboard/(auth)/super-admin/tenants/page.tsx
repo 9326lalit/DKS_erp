@@ -40,13 +40,6 @@ export default function SuperAdminTenantsPage() {
     );
   });
 
-  const handleImpersonate = (tenantId: string) => {
-    setActiveTenant(tenantId);
-    const tenant = tenants.find((t) => t.id === tenantId);
-    toast.success(`Impersonating Mill: ${tenant?.name}`);
-    router.push("/dashboard");
-  };
-
   return (
     <PageContainer>
       <PageHeader
@@ -85,7 +78,7 @@ export default function SuperAdminTenantsPage() {
               <Building2 className="h-5 w-5 text-emerald-500" /> Complete Tenant Businesses Directory
             </CardTitle>
             <CardDescription className="text-xs">
-              Review owner contacts, GST/PAN records, loom capacities, and 1-click mill impersonation.
+              Review owner contacts, GST/PAN records, loom capacities, and business profile specs.
             </CardDescription>
           </div>
 
@@ -185,15 +178,7 @@ export default function SuperAdminTenantsPage() {
                           }}
                           className="h-8 px-2 text-xs gap-1 cursor-pointer"
                         >
-                          <Eye className="h-3.5 w-3.5 text-blue-500" /> Full Info
-                        </Button>
-
-                        <Button
-                          size="sm"
-                          onClick={() => handleImpersonate(t.id)}
-                          className="h-8 px-2 text-xs bg-emerald-600 hover:bg-emerald-500 text-white gap-1 cursor-pointer"
-                        >
-                          <ArrowUpRight className="h-3.5 w-3.5" /> Impersonate
+                          <Eye className="h-3.5 w-3.5 text-blue-500" /> Full Specs
                         </Button>
                       </div>
                     </TableCell>
@@ -269,16 +254,7 @@ export default function SuperAdminTenantsPage() {
               </div>
 
               <DialogFooter>
-                <Button variant="outline" onClick={() => setIsViewDetailsOpen(false)}>Close</Button>
-                <Button
-                  onClick={() => {
-                    setIsViewDetailsOpen(false);
-                    handleImpersonate(selectedTenant.id);
-                  }}
-                  className="bg-emerald-600 hover:bg-emerald-500 text-white"
-                >
-                  Impersonate & Open Mill Dashboard →
-                </Button>
+                <Button variant="outline" onClick={() => setIsViewDetailsOpen(false)}>Close Specs</Button>
               </DialogFooter>
             </>
           )}

@@ -54,9 +54,12 @@ const yarnFormSchema = z.object({
 
 type YarnFormValues = z.infer<typeof yarnFormSchema>;
 
+import { useTenantStore } from "@/lib/store/use-tenant-store";
+
 export default function YarnsPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { activeTenantId } = useTenantStore();
 
   // Search & Filter state
   const [searchValue, setSearchValue] = useState("");
@@ -76,7 +79,7 @@ export default function YarnsPage() {
 
   // TanStack Queries & Mutations
   const { data: yarns = [], isLoading, refetch } = useQuery({
-    queryKey: ["yarns"],
+    queryKey: ["yarns", activeTenantId],
     queryFn: () => mastersApiService.getYarns()
   });
 

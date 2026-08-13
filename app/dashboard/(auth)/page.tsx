@@ -105,7 +105,7 @@ export default function DashboardPage() {
     }).format(val);
   };
 
-  const testRoles: UserRole[] = ["Super Admin", "Mill Manager", "Production Head", "Accountant", "Global Super Admin"];
+  const testRoles: UserRole[] = ["Global Super Admin", "Factory Owner"];
 
   return (
     <PageContainer>

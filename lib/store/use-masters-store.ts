@@ -7,6 +7,7 @@ import { persist } from "zustand/middleware";
 
 export interface Factory {
   id: string;
+  tenantId?: string;
   factoryId: string; // Auto-generated display code e.g. FAC-001
   factoryName: string;
   ownerName: string;
@@ -36,6 +37,7 @@ export interface Factory {
 
 export interface Loom {
   id: string;
+  tenantId?: string;
   loomId: string; // e.g. LOM-001
   factoryId: string;
   factoryName: string;
@@ -55,6 +57,7 @@ export interface Loom {
 
 export interface Fabric {
   id: string;
+  tenantId?: string;
   fabricCode: string;
   fabricName: string;
   construction: string;
@@ -73,6 +76,7 @@ export interface Fabric {
 
 export interface Party {
   id: string;
+  tenantId?: string;
   partyCode: string;
   partyName: string;
   partyType: "Supplier" | "Buyer" | "Labour Contractor";
@@ -93,6 +97,7 @@ export interface Party {
 
 export interface Labour {
   id: string;
+  tenantId?: string;
   labourId: string; // e.g. LAB-001
   fullName: string;
   labourType: "Weaver" | "Helper" | "Sizing Worker" | "Contractor";
@@ -116,6 +121,7 @@ export interface Labour {
 
 export interface Employee {
   id: string;
+  tenantId?: string;
   employeeCode: string;
   name: string;
   photo?: string;
@@ -133,6 +139,7 @@ export interface Employee {
 
 export interface Yarn {
   id: string;
+  tenantId?: string;
   yarnCode: string;
   yarnName: string;
   material: "Cotton" | "Polyester" | "PV" | "Viscose";
@@ -151,6 +158,7 @@ export interface Yarn {
 
 export interface Shift {
   id: string;
+  tenantId?: string;
   shiftCode: string;
   shiftName: string;
   startTime: string;
@@ -162,6 +170,7 @@ export interface Shift {
 
 export interface Warehouse {
   id: string;
+  tenantId?: string;
   warehouseCode: string;
   warehouseName: string;
   location: string;
@@ -185,6 +194,7 @@ export interface ExpenseCategory {
 
 export interface SizingMill {
   id: string;
+  tenantId?: string;
   millCode: string;
   millName: string;
   contactPerson?: string;
@@ -283,9 +293,11 @@ interface MastersState {
 // ----------------------------------------------------
 
 const getInitialSeeds = () => {
+  // 1. FACTORIES (Multi-Tenant Scoped)
   const seededFactories: Factory[] = [
     {
       id: "FAC-ID-001",
+      tenantId: "dhandai-textiles",
       factoryId: "FAC-001",
       factoryName: "Dhandai Textiles (Main Shed)",
       ownerName: "Bhushan Khairnar",
@@ -302,7 +314,7 @@ const getInitialSeeds = () => {
       shedType: "RCC",
       noOfFloors: 2,
       contactNumber: "+91 98230 11223",
-      email: "bhushan@dhandaitextiles.com",
+      email: "owner@dhandaitextiles.com",
       electricityMeterNo: "EB-4521-ICH",
       establishmentDate: "2018-04-01",
       activeStatus: "Active",
@@ -310,6 +322,7 @@ const getInitialSeeds = () => {
     },
     {
       id: "FAC-ID-002",
+      tenantId: "dhandai-textiles",
       factoryId: "FAC-002",
       factoryName: "Dhandai Textiles Unit-II",
       ownerName: "Bhushan Khairnar",
@@ -326,12 +339,13 @@ const getInitialSeeds = () => {
       shedType: "Tin",
       noOfFloors: 1,
       contactNumber: "+91 98765 44321",
-      email: "bhushan@dhandaitextiles.com",
+      email: "owner@dhandaitextiles.com",
       activeStatus: "Active",
       notes: "Secondary rapier weaving shed — 12 looms operational"
     },
     {
       id: "FAC-ID-003",
+      tenantId: "lalit-textiles",
       factoryId: "FAC-003",
       factoryName: "Lalit Textiles Weaving Unit",
       ownerName: "Lalit Patil",
@@ -351,15 +365,90 @@ const getInitialSeeds = () => {
       email: "lalit@lalittextiles.com",
       activeStatus: "Active",
       notes: "Lalit Textiles high-speed rapier and powerloom weaving unit — 12 looms operational"
+    },
+    // Royal Fabrics (Surat, Gujarat)
+    {
+      id: "FAC-ID-RF1",
+      tenantId: "royal-fabrics",
+      factoryId: "FAC-RF1",
+      factoryName: "Royal Jacquard Weaving Plant",
+      ownerName: "Suresh Sharma",
+      plotNo: "Plot No. 402",
+      addressLine1: "Ring Road Textile Market",
+      cityVillage: "Surat",
+      taluka: "Surat City",
+      district: "Surat",
+      state: "Gujarat",
+      pincode: "395002",
+      shedLength: 150,
+      shedWidth: 80,
+      totalArea: 12000,
+      shedType: "RCC",
+      noOfFloors: 3,
+      contactNumber: "+91 98765 43210",
+      email: "admin@royalfabrics.com",
+      electricityMeterNo: "EB-SURAT-882",
+      establishmentDate: "2019-01-15",
+      activeStatus: "Active",
+      notes: "High-speed Electronic Jacquard fabric weaving plant"
+    },
+    // SilverThread Denim (Bhiwandi)
+    {
+      id: "FAC-ID-ST1",
+      tenantId: "silverthread-denim",
+      factoryId: "FAC-ST1",
+      factoryName: "SilverThread Heavy Denim Plant",
+      ownerName: "Rajesh Varma",
+      plotNo: "Gat No. 88",
+      addressLine1: "Powerloom Zone, Kalher",
+      cityVillage: "Bhiwandi",
+      taluka: "Bhiwandi",
+      district: "Thane",
+      state: "Maharashtra",
+      pincode: "421302",
+      shedLength: 110,
+      shedWidth: 60,
+      totalArea: 6600,
+      shedType: "RCC",
+      noOfFloors: 1,
+      contactNumber: "+91 91234 56789",
+      email: "manager@silverthread.com",
+      activeStatus: "Active",
+      notes: "14oz Indigo Denim rapier weaving plant"
+    },
+    // Mahadev Spinning (Ahmedabad)
+    {
+      id: "FAC-ID-MS1",
+      tenantId: "mahadev-spinning",
+      factoryId: "FAC-MS1",
+      factoryName: "Mahadev Weaving & Sizing Unit",
+      ownerName: "Sanjay Patel",
+      plotNo: "Plot 12",
+      addressLine1: "GIDC Naroda Industrial Estate",
+      cityVillage: "Ahmedabad",
+      taluka: "Naroda",
+      district: "Ahmedabad",
+      state: "Gujarat",
+      pincode: "382330",
+      shedLength: 130,
+      shedWidth: 70,
+      totalArea: 9100,
+      shedType: "RCC",
+      noOfFloors: 2,
+      contactNumber: "+91 98111 22233",
+      email: "admin@mahadevweaving.com",
+      activeStatus: "Active",
+      notes: "20 High-speed Airjet looms for 100% Grey Cotton Fabric"
     }
   ];
 
-  // Generate 48 Looms total (24 in Dhandai Main Shed, 12 in Dhandai Unit-II, 12 in Lalit Textiles)
+  // 2. LOOMS (Multi-Tenant Scoped)
   const dhandaiLooms: Loom[] = Array.from({ length: 36 }, (_, i) => {
     const loomNum = i + 1;
     const isMainShed = loomNum <= 24;
     return {
       id: `LOM-ID-${String(loomNum).padStart(3, "0")}`,
+      tenantId: "dhandai-textiles",
       loomId: `LOM-${String(loomNum).padStart(3, "0")}`,
       factoryId: isMainShed ? "FAC-ID-001" : "FAC-ID-002",
       factoryName: isMainShed ? "Dhandai Textiles (Main Shed)" : "Dhandai Textiles Unit-II",
@@ -374,10 +463,11 @@ const getInitialSeeds = () => {
     };
   });
 
-  const lalitLooms: Loom[] = Array.from({ length: 12 }, (_, i) => {
+  const lalitLooms: Loom[] = Array.from({ length: 24 }, (_, i) => {
     const loomNum = i + 1;
     return {
       id: `LOM-LALIT-${String(loomNum).padStart(3, "0")}`,
+      tenantId: "lalit-textiles",
       loomId: `LOM-LT-${String(loomNum).padStart(3, "0")}`,
       factoryId: "FAC-ID-003",
       factoryName: "Lalit Textiles Weaving Unit",
@@ -392,11 +482,79 @@ const getInitialSeeds = () => {
     };
   });
 
-  const seededLooms: Loom[] = [...dhandaiLooms, ...lalitLooms];
+  // Royal Fabrics 40 Electronic Jacquard Looms
+  const royalLooms: Loom[] = Array.from({ length: 40 }, (_, i) => {
+    const loomNum = i + 1;
+    return {
+      id: `LOM-RF-ID-${String(loomNum).padStart(3, "0")}`,
+      tenantId: "royal-fabrics",
+      loomId: `LOM-RF-${String(loomNum).padStart(3, "0")}`,
+      factoryId: "FAC-ID-RF1",
+      factoryName: "Royal Jacquard Weaving Plant",
+      loomNumber: `RF-JAC-${String(loomNum).padStart(3, "0")}`,
+      loomType: "Rapier",
+      reedCount: 144,
+      widthInches: 72,
+      rpmSpeed: 760,
+      makeBrand: "Staubli Jacquard",
+      yearOfPurchase: 2022 + (loomNum % 3),
+      status: loomNum % 10 === 0 ? "Idle" : "Active"
+    };
+  });
 
+  // SilverThread 16 Denim Looms
+  const silverThreadLooms: Loom[] = Array.from({ length: 16 }, (_, i) => {
+    const loomNum = i + 1;
+    return {
+      id: `LOM-ST-ID-${String(loomNum).padStart(3, "0")}`,
+      tenantId: "silverthread-denim",
+      loomId: `LOM-ST-${String(loomNum).padStart(3, "0")}`,
+      factoryId: "FAC-ID-ST1",
+      factoryName: "SilverThread Heavy Denim Plant",
+      loomNumber: `ST-DEN-${String(loomNum).padStart(3, "0")}`,
+      loomType: "Rapier",
+      reedCount: 110,
+      widthInches: 68,
+      rpmSpeed: 640,
+      makeBrand: "Dornier",
+      yearOfPurchase: 2020 + (loomNum % 4),
+      status: "Active"
+    };
+  });
+
+  // Mahadev Spinning 20 Airjet Looms
+  const mahadevLooms: Loom[] = Array.from({ length: 20 }, (_, i) => {
+    const loomNum = i + 1;
+    return {
+      id: `LOM-MS-ID-${String(loomNum).padStart(3, "0")}`,
+      tenantId: "mahadev-spinning",
+      loomId: `LOM-MS-${String(loomNum).padStart(3, "0")}`,
+      factoryId: "FAC-ID-MS1",
+      factoryName: "Mahadev Weaving & Sizing Unit",
+      loomNumber: `MS-AIR-${String(loomNum).padStart(3, "0")}`,
+      loomType: "Power Loom",
+      reedCount: 120,
+      widthInches: 64,
+      rpmSpeed: 820,
+      makeBrand: "Toyota Airjet",
+      yearOfPurchase: 2023,
+      status: "Active"
+    };
+  });
+
+  const seededLooms: Loom[] = [
+    ...dhandaiLooms,
+    ...lalitLooms,
+    ...royalLooms,
+    ...silverThreadLooms,
+    ...mahadevLooms
+  ];
+
+  // 3. FABRICS (Multi-Tenant Scoped)
   const seededFabrics: Fabric[] = [
     {
       id: "FAB-ID-001",
+      tenantId: "dhandai-textiles",
       fabricCode: "FAB-001",
       fabricName: "Dhandai Premium Cotton Poplin",
       construction: "60x60 / 132x72",
@@ -410,12 +568,48 @@ const getInitialSeeds = () => {
       unit: "Meters",
       description: "Dhandai Textiles premium cotton fabric for shirting.",
       status: "Active"
+    },
+    {
+      id: "FAB-ID-002",
+      tenantId: "royal-fabrics",
+      fabricCode: "FAB-RF-001",
+      fabricName: "Royal Silk Brocade Jacquard",
+      construction: "80x80 / 160x90",
+      width: 54,
+      gsm: 160,
+      warp: "60s Silk",
+      weft: "120D Polyester",
+      pick: 90,
+      ends: 160,
+      quality: "Designer Jacquard",
+      unit: "Meters",
+      description: "Royal Fabrics premium saree and upholstery Jacquard fabric.",
+      status: "Active"
+    },
+    {
+      id: "FAB-ID-003",
+      tenantId: "silverthread-denim",
+      fabricCode: "FAB-ST-001",
+      fabricName: "14oz Heavy Indigo Denim",
+      construction: "3/1 Twill / 68x44",
+      width: 60,
+      gsm: 420,
+      warp: "10s Indigo Slub",
+      weft: "12s OE Cotton",
+      pick: 44,
+      ends: 68,
+      quality: "Export Grade Denim",
+      unit: "Meters",
+      description: "Heavyweight 14oz ring denim for jeans production.",
+      status: "Active"
     }
   ];
 
+  // 4. PARTIES (Multi-Tenant Scoped)
   const seededParties: Party[] = [
     {
       id: "PRT-ID-001",
+      tenantId: "dhandai-textiles",
       partyCode: "PRT-B001",
       partyName: "Dhandai Textiles (Own Firm)",
       partyType: "Buyer",
@@ -429,6 +623,7 @@ const getInitialSeeds = () => {
     },
     {
       id: "PRT-ID-002",
+      tenantId: "dhandai-textiles",
       partyCode: "PRT-S001",
       partyName: "Surat Yarn Mills Pvt Ltd",
       partyType: "Supplier",
@@ -441,54 +636,73 @@ const getInitialSeeds = () => {
       activeStatus: "Active"
     },
     {
-      id: "PRT-ID-003",
-      partyCode: "PRT-S002",
-      partyName: "Ichalkaranji Cotton Suppliers",
-      partyType: "Supplier",
-      contactPerson: "Sanjay Patil",
-      mobileNumber: "+91 98341 56789",
-      gstNumber: "27AAIOY1234P1Z3",
-      panNumber: "AAIOY1234P",
-      address: "Shop No. 5, Textile Complex, Ichalkaranji - 416115",
+      id: "PRT-RF-001",
+      tenantId: "royal-fabrics",
+      partyCode: "PRT-RF-B1",
+      partyName: "Royal Fabrics & Weaving (Own Firm)",
+      partyType: "Buyer",
+      contactPerson: "Suresh Sharma",
+      mobileNumber: "+91 98765 43210",
+      gstNumber: "24AAACR1234M1Z8",
+      panNumber: "AAACR1234M",
+      address: "Ring Road Textile Market, Surat, Gujarat - 395002",
       openingBalance: 0,
       activeStatus: "Active"
     },
     {
-      id: "PRT-ID-004",
-      partyCode: "PRT-S003",
-      partyName: "Reliance Yarn Industries",
+      id: "PRT-RF-002",
+      tenantId: "royal-fabrics",
+      partyCode: "PRT-RF-S1",
+      partyName: "Surat Silk & Filament Yarn Corp",
       partyType: "Supplier",
+      contactPerson: "Kirtan Patel",
+      mobileNumber: "+91 98220 99887",
+      gstNumber: "24AAACS9988K1Z2",
+      panNumber: "AAACS9988K",
+      address: "Silk Complex, Surat - 395003",
+      openingBalance: 0,
+      activeStatus: "Active"
+    },
+    {
+      id: "PRT-ST-001",
+      tenantId: "silverthread-denim",
+      partyCode: "PRT-ST-B1",
+      partyName: "SilverThread Denim Mill",
+      partyType: "Buyer",
       contactPerson: "Rajesh Varma",
       mobileNumber: "+91 91234 56789",
-      gstNumber: "27AAIGS1234R1Z7",
-      panNumber: "AAIGS1234R",
-      address: "Gat No. 8, Yarn Colony, Ichalkaranji - 416115",
+      gstNumber: "27AAACS4321L1Z9",
+      panNumber: "AAACS4321L",
+      address: "Powerloom Zone, Bhiwandi - 421302",
       openingBalance: 0,
       activeStatus: "Active"
     }
   ];
 
+  // 5. LABOUR (Multi-Tenant Scoped)
   const seededLabour: Labour[] = [
-    { id: "LAB-ID-001", labourId: "LAB-001", fullName: "Mahadev Koli", labourType: "Weaver", linkedFactoryId: "FAC-ID-001", linkedFactoryName: "Dhandai Textiles (Main Shed)", linkedLoomId: "LOM-ID-001", linkedLoomNumber: "L-001, L-002", mobileNumber: "+91 98230 11223", joiningDate: "2022-06-01", rateType: "Per Metre", rate: 8.5, activeStatus: "Active" },
-    { id: "LAB-ID-002", labourId: "LAB-002", fullName: "Ganesh Mane", labourType: "Weaver", linkedFactoryId: "FAC-ID-001", linkedFactoryName: "Dhandai Textiles (Main Shed)", linkedLoomId: "LOM-ID-003", linkedLoomNumber: "L-003, L-004", mobileNumber: "+91 98230 22334", joiningDate: "2022-08-15", rateType: "Per Metre", rate: 8.5, activeStatus: "Active" },
-    { id: "LAB-ID-003", labourId: "LAB-003", fullName: "Mohammad Bhai", labourType: "Weaver", linkedFactoryId: "FAC-ID-001", linkedFactoryName: "Dhandai Textiles (Main Shed)", linkedLoomId: "LOM-ID-005", linkedLoomNumber: "L-005, L-006", mobileNumber: "+91 98230 33445", joiningDate: "2021-04-10", rateType: "Per Metre", rate: 9.5, activeStatus: "Active" },
-    { id: "LAB-ID-004", labourId: "LAB-004", fullName: "Santosh Kadam", labourType: "Helper", linkedFactoryId: "FAC-ID-001", linkedFactoryName: "Dhandai Textiles (Main Shed)", linkedLoomId: "LOM-ID-007", linkedLoomNumber: "L-007, L-008", mobileNumber: "+91 98230 44556", joiningDate: "2023-01-05", rateType: "Daily", rate: 650, activeStatus: "Active" },
-    { id: "LAB-ID-005", labourId: "LAB-005", fullName: "Dattatray Shinde", labourType: "Contractor", linkedFactoryId: "FAC-ID-001", linkedFactoryName: "Dhandai Textiles (Main Shed)", linkedLoomId: "LOM-ID-009", linkedLoomNumber: "L-009, L-010", mobileNumber: "+91 98230 55667", joiningDate: "2020-11-20", rateType: "Contract", rate: 25000, activeStatus: "Active" }
+    { id: "LAB-ID-001", tenantId: "dhandai-textiles", labourId: "LAB-001", fullName: "Mahadev Koli", labourType: "Weaver", linkedFactoryId: "FAC-ID-001", linkedFactoryName: "Dhandai Textiles (Main Shed)", linkedLoomId: "LOM-ID-001", linkedLoomNumber: "L-001, L-002", mobileNumber: "+91 98230 11223", joiningDate: "2022-06-01", rateType: "Per Metre", rate: 8.5, activeStatus: "Active" },
+    { id: "LAB-ID-002", tenantId: "dhandai-textiles", labourId: "LAB-002", fullName: "Ganesh Mane", labourType: "Weaver", linkedFactoryId: "FAC-ID-001", linkedFactoryName: "Dhandai Textiles (Main Shed)", linkedLoomId: "LOM-ID-003", linkedLoomNumber: "L-003, L-004", mobileNumber: "+91 98230 22334", joiningDate: "2022-08-15", rateType: "Per Metre", rate: 8.5, activeStatus: "Active" },
+    // Royal Fabrics Labourers
+    { id: "LAB-RF-001", tenantId: "royal-fabrics", labourId: "LAB-RF-01", fullName: "Jignesh Patel", labourType: "Weaver", linkedFactoryId: "FAC-ID-RF1", linkedFactoryName: "Royal Jacquard Weaving Plant", linkedLoomId: "LOM-RF-ID-001", linkedLoomNumber: "RF-JAC-001, RF-JAC-002", mobileNumber: "+91 98765 88990", joiningDate: "2021-03-10", rateType: "Per Metre", rate: 12.0, activeStatus: "Active" },
+    { id: "LAB-RF-002", tenantId: "royal-fabrics", labourId: "LAB-RF-02", fullName: "Ramesh Bhai", labourType: "Helper", linkedFactoryId: "FAC-ID-RF1", linkedFactoryName: "Royal Jacquard Weaving Plant", mobileNumber: "+91 98765 77665", joiningDate: "2023-02-01", rateType: "Daily", rate: 700, activeStatus: "Active" }
   ];
 
+  // 6. YARNS (Multi-Tenant Scoped)
   const seededYarns: Yarn[] = [
-    { id: "YRN-ID-001", yarnCode: "YRN-001", yarnName: "40s Cotton Warp", material: "Cotton", count: "40s", brand: "Vardhman", color: "Natural", unit: "KG", rate: 280, gst: 12, status: "Active" },
-    { id: "YRN-ID-002", yarnCode: "YRN-002", yarnName: "2/40s PC Weft", material: "Polyester", count: "2/40s", brand: "Reliance", color: "White", unit: "KG", rate: 240, gst: 12, status: "Active" }
+    { id: "YRN-ID-001", tenantId: "dhandai-textiles", yarnCode: "YRN-001", yarnName: "40s Cotton Warp", material: "Cotton", count: "40s", brand: "Vardhman", color: "Natural", unit: "KG", rate: 280, gst: 12, status: "Active" },
+    { id: "YRN-RF-001", tenantId: "royal-fabrics", yarnCode: "YRN-RF-01", yarnName: "80s Filament Silk Yarn", material: "Viscose", count: "80s", brand: "Surat Silk", color: "Golden Yellow", unit: "KG", rate: 650, gst: 12, status: "Active" },
+    { id: "YRN-ST-001", tenantId: "silverthread-denim", yarnCode: "YRN-ST-01", yarnName: "10s Indigo Slub Warp", material: "Cotton", count: "10s", brand: "Raymond", color: "Deep Indigo", unit: "KG", rate: 320, gst: 12, status: "Active" }
   ];
 
   const seededShifts: Shift[] = [
-    { id: "SHF-ID-001", shiftCode: "SHF-001", shiftName: "Day Shift", startTime: "08:00 AM", endTime: "08:00 PM", breakTime: "60 Min", status: "Active" },
-    { id: "SHF-ID-002", shiftCode: "SHF-002", shiftName: "Night Shift", startTime: "08:00 PM", endTime: "08:00 AM", breakTime: "60 Min", status: "Active" }
+    { id: "SHF-ID-001", tenantId: "dhandai-textiles", shiftCode: "SHF-001", shiftName: "Day Shift", startTime: "08:00 AM", endTime: "08:00 PM", breakTime: "60 Min", status: "Active" },
+    { id: "SHF-ID-002", tenantId: "dhandai-textiles", shiftCode: "SHF-002", shiftName: "Night Shift", startTime: "08:00 PM", endTime: "08:00 AM", breakTime: "60 Min", status: "Active" }
   ];
 
   const seededWarehouses: Warehouse[] = [
-    { id: "WH-ID-001", warehouseCode: "WH-001", warehouseName: "Dhandai Yarn Store", location: "Main Factory", type: "Yarn", status: "Active" },
-    { id: "WH-ID-002", warehouseCode: "WH-002", warehouseName: "Dhandai Beam Store", location: "Sizing Yard", type: "Beam", status: "Active" }
+    { id: "WH-ID-001", tenantId: "dhandai-textiles", warehouseCode: "WH-001", warehouseName: "Dhandai Yarn Store", location: "Main Factory", type: "Yarn", status: "Active" },
+    { id: "WH-RF-001", tenantId: "royal-fabrics", warehouseCode: "WH-RF-01", warehouseName: "Royal Jacquard Yarn & Silk Store", location: "Surat Market", type: "Yarn", status: "Active" }
   ];
 
   const seededUnits: Unit[] = [
@@ -504,23 +718,23 @@ const getInitialSeeds = () => {
   ];
 
   const seededSizingMills: SizingMill[] = [
-    { id: "SZM-ID-001", millCode: "SZM-001", millName: "Sumit Sizing Works", contactPerson: "Sumit Patil", mobileNumber: "+91 99220 11223", address: "Gat No. 14, Sizing Zone, Ichalkaranji", activeStatus: "Active" },
-    { id: "SZM-ID-002", millCode: "SZM-002", millName: "Sumit Warping & Sizing Unit-2", contactPerson: "Sumit Patil", mobileNumber: "+91 99220 44556", address: "Plot 8, Sizing Complex, Ichalkaranji", activeStatus: "Active" }
+    { id: "SZM-ID-001", tenantId: "dhandai-textiles", millCode: "SZM-001", millName: "Sumit Sizing Works", contactPerson: "Sumit Patil", mobileNumber: "+91 99220 11223", address: "Gat No. 14, Sizing Zone, Ichalkaranji", activeStatus: "Active" },
+    { id: "SZM-RF-001", tenantId: "royal-fabrics", millCode: "SZM-RF-01", millName: "Surat Jacquard Warping & Sizing", contactPerson: "Ketan Patel", mobileNumber: "+91 98220 55443", address: "GIDC Sizing Zone, Surat", activeStatus: "Active" }
   ];
 
   return {
     factories: seededFactories,
     looms: seededLooms,
-    fabrics: seededFabrics,
-    parties: seededParties,
-    yarns: seededYarns,
-    shifts: seededShifts,
-    warehouses: seededWarehouses,
+    fabrics: [],
+    parties: [],
+    yarns: [],
+    shifts: [],
+    warehouses: [],
     units: seededUnits,
-    labour: seededLabour,
+    labour: [],
     employees: [],
-    expenseCategories: seededExpenseCats,
-    sizingMills: seededSizingMills
+    expenseCategories: [],
+    sizingMills: []
   };
 };
 
@@ -685,13 +899,11 @@ export const useMastersStore = create<MastersState>()(
         })),
     }),
     {
-      name: "dks-textile-erp-masters-v2",
+      name: "dks-textile-erp-masters-v5",
       onRehydrateStorage: () => (state) => {
         if (state) {
           state.setHydrated(true);
-          if (state.factories.length === 0) {
-            state.initializeSeeds();
-          }
+          state.initializeSeeds();
         }
       }
     }

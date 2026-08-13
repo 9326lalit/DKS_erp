@@ -66,9 +66,12 @@ const factorySchema = z.object({
 
 type FactoryFormValues = z.infer<typeof factorySchema>;
 
+import { useTenantStore } from "@/lib/store/use-tenant-store";
+
 export default function FactoriesPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { activeTenantId } = useTenantStore();
   const [searchValue, setSearchValue] = useState("");
   const [selectedFilters, setSelectedFilters] = useState<Record<string, string>>({ activeStatus: "all" });
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -78,7 +81,7 @@ export default function FactoriesPage() {
   const [deleteTarget, setDeleteTarget] = useState<FactoryType | null>(null);
 
   const { data: factories = [], isLoading } = useQuery({
-    queryKey: ["factories"],
+    queryKey: ["factories", activeTenantId],
     queryFn: () => mastersApiService.getFactories()
   });
 

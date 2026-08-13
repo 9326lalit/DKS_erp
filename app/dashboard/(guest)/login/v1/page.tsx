@@ -116,50 +116,6 @@ export default function Page() {
             </Button>
           </form>
 
-          {/* Quick Demo Login Cards */}
-          <div className="pt-4 border-t border-slate-800 space-y-3">
-            <div className="flex items-center justify-between text-xs text-slate-400">
-              <span className="font-semibold uppercase tracking-wider flex items-center gap-1.5 text-amber-400">
-                <Sparkles className="h-3.5 w-3.5" /> 1-Click Tenant Testing
-              </span>
-              <span>Pass: password123</span>
-            </div>
-
-            {/* Global Super Admin Button */}
-            <button
-              type="button"
-              onClick={() => {
-                loginSuperAdmin();
-                toast.success("Logged in as Global Super Admin!");
-                router.push("/dashboard/super-admin");
-              }}
-              className="w-full flex items-center justify-between p-2.5 rounded-lg border border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20 transition-all text-left cursor-pointer mb-2"
-            >
-              <div className="flex items-center gap-2">
-                <Crown className="h-4 w-4 text-amber-400" />
-                <span className="text-xs font-bold text-amber-200">Global Super Admin Control Center</span>
-              </div>
-              <span className="text-[11px] font-bold text-amber-400">Open →</span>
-            </button>
-
-            <div className="grid grid-cols-2 gap-2">
-              {tenants.map((t) => (
-                <button
-                  key={t.id}
-                  type="button"
-                  onClick={() => handleQuickLogin(t.users[0].email)}
-                  className="p-2.5 rounded-lg border border-slate-800 bg-slate-900/60 hover:bg-slate-800 hover:border-emerald-500/50 transition-all text-left cursor-pointer"
-                >
-                  <div className="flex items-center gap-1.5">
-                    <span>{t.logo}</span>
-                    <span className="text-xs font-bold text-slate-200 truncate">{t.name}</span>
-                  </div>
-                  <p className="text-[10px] text-slate-400 truncate mt-0.5">{t.cluster}</p>
-                </button>
-              ))}
-            </div>
-          </div>
-
           <div className="text-center text-xs text-slate-500">
             Don&apos;t have an account?{" "}
             <Link href="/dashboard/register/v1" className="underline text-slate-300">

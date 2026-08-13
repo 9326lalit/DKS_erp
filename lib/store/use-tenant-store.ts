@@ -14,6 +14,7 @@ export interface TenantUnit {
 
 export type UserRole =
   | "Global Super Admin"
+  | "Factory Owner"
   | "Business Owner"
   | "Super Admin"
   | "Owner"
@@ -56,63 +57,30 @@ export interface RolePermissionConfig {
   description: string;
 }
 
+const FACTORY_OWNER_PERMISSION: RolePermissionConfig = {
+  role: "Factory Owner",
+  title: "Factory Owner / Mill Principal",
+  badgeColor: "bg-emerald-600 text-white font-bold border-emerald-500",
+  allowedNavGroupTitles: ["Operations", "Master Data", "Yarn (Tana & Bana)", "Weaving & Production", "Procurement & Sizing", "Financials & Reports"],
+  description: "Full Mill Owner Access: Master Registries, Factory Sheds, Yarn Purchasing, Weaving Production, Financial Billing & System Controls."
+};
+
 export const ROLE_PERMISSIONS: Record<UserRole, RolePermissionConfig> = {
   "Global Super Admin": {
     role: "Global Super Admin",
-    title: "Global Platform Super Admin",
+    title: "Global SaaS Platform Super Admin",
     badgeColor: "bg-amber-500 text-slate-950 font-bold border-amber-400",
     allowedNavGroupTitles: ["SaaS Control Center"],
     description: "SaaS Executive Scope: Platform Overview, Tenant Directory, Global Factories, Billing Subscriptions & Audit Logs."
   },
-  "Business Owner": {
-    role: "Business Owner",
-    title: "Business Owner",
-    badgeColor: "bg-emerald-600 text-white font-bold border-emerald-500",
-    allowedNavGroupTitles: ["Operations", "Master Data", "Yarn (Tana & Bana)", "Weaving & Production", "Procurement & Sizing", "Financials & Reports"],
-    description: "Complete Business Access: Master Registries, Factory Sheds, Yarn Purchasing, Production, Financials & Business Setup."
-  },
-  "Super Admin": {
-    role: "Business Owner",
-    title: "Business Owner",
-    badgeColor: "bg-emerald-600 text-white font-bold border-emerald-500",
-    allowedNavGroupTitles: ["Operations", "Master Data", "Yarn (Tana & Bana)", "Weaving & Production", "Procurement & Sizing", "Financials & Reports"],
-    description: "Complete Business Access: Master Registries, Factory Sheds, Yarn Purchasing, Production, Financials & Business Setup."
-  },
-  "Owner": {
-    role: "Business Owner",
-    title: "Business Owner",
-    badgeColor: "bg-emerald-600 text-white font-bold border-emerald-500",
-    allowedNavGroupTitles: ["Operations", "Master Data", "Yarn (Tana & Bana)", "Weaving & Production", "Procurement & Sizing", "Financials & Reports"],
-    description: "Complete Business Access: Master Registries, Factory Sheds, Yarn Purchasing, Production, Financials & Business Setup."
-  },
-  "Mill Manager": {
-    role: "Mill Manager",
-    title: "Plant / Mill Manager",
-    badgeColor: "bg-blue-600 text-white font-bold border-blue-500",
-    allowedNavGroupTitles: ["Operations", "Master Data", "Yarn (Tana & Bana)", "Weaving & Production", "Procurement & Sizing"],
-    description: "Operations & Inventory Access: Looms, Beams, Yarn Lots, Sizing Batches, Labour Staff & Goods Receipts (GRN)."
-  },
-  "Production Head": {
-    role: "Production Head",
-    title: "Head of Production / Jobber",
-    badgeColor: "bg-indigo-600 text-white font-bold border-indigo-500",
-    allowedNavGroupTitles: ["Operations", "Master Data", "Weaving & Production"],
-    description: "Floor Production Access: Loom Speeds (RPM), Shift Output, Beam Mounting, Warp/Weft Defect Logging & Weavers."
-  },
-  "Supervisor": {
-    role: "Supervisor",
-    title: "Shift Supervisor",
-    badgeColor: "bg-purple-600 text-white font-bold border-purple-500",
-    allowedNavGroupTitles: ["Operations", "Weaving & Production"],
-    description: "Shift Monitoring Access: Daily Weaving Records, Shift Output, Worker Attendance & Loom Stop Tracking."
-  },
-  "Accountant": {
-    role: "Accountant",
-    title: "Mill Accountant",
-    badgeColor: "bg-teal-600 text-white font-bold border-teal-500",
-    allowedNavGroupTitles: ["Operations", "Master Data", "Financials & Reports"],
-    description: "Financial Control Access: Invoices, Sales Billing, Expenses, Electricity Charges & GST Tax Filings."
-  }
+  "Factory Owner": FACTORY_OWNER_PERMISSION,
+  "Business Owner": FACTORY_OWNER_PERMISSION,
+  "Super Admin": FACTORY_OWNER_PERMISSION,
+  "Owner": FACTORY_OWNER_PERMISSION,
+  "Mill Manager": FACTORY_OWNER_PERMISSION,
+  "Production Head": FACTORY_OWNER_PERMISSION,
+  "Accountant": FACTORY_OWNER_PERMISSION,
+  "Supervisor": FACTORY_OWNER_PERMISSION
 };
 
 export const GLOBAL_SUPER_ADMIN_USER: TenantUser = {
@@ -214,197 +182,66 @@ export const SEED_TENANTS: Tenant[] = [
     ],
     users: [
       {
-        id: "user-1",
+        id: "user-1-owner",
         name: "Bhushan Khairnar",
         email: "owner@dhandaitextiles.com",
-        role: "Super Admin",
+        role: "Factory Owner",
         avatarUrl: "/images/avatars/01.png",
         phone: "+91 98230 11223"
-      },
-      {
-        id: "user-1-mgr",
-        name: "Sumit Patil",
-        email: "manager@dhandaitextiles.com",
-        role: "Mill Manager",
-        avatarUrl: "/images/avatars/02.png",
-        phone: "+91 98230 44551"
-      },
-      {
-        id: "user-1-prd",
-        name: "Sanjay Jobber",
-        email: "production@dhandaitextiles.com",
-        role: "Production Head",
-        avatarUrl: "/images/avatars/03.png",
-        phone: "+91 98230 44556"
-      },
-      {
-        id: "user-1-act",
-        name: "Aniket Gaikwad",
-        email: "accountant@dhandaitextiles.com",
-        role: "Accountant",
-        avatarUrl: "/images/avatars/04.png",
-        phone: "+91 98230 44599"
       }
     ]
   },
   {
-    id: "royal-fabrics",
-    name: "Royal Fabrics & Weaving",
-    slug: "royal-fabrics",
+    id: "lalit-textiles",
+    name: "Lalit Textiles & Weaving",
+    slug: "lalit-textiles",
     logo: "🧵",
-    tagline: "High-Speed Electronic Jacquard Fabric Mill",
-    cluster: "Surat, Gujarat",
+    tagline: "High-Speed Rapier & Airjet Cotton Mill",
+    cluster: "Ichalkaranji, Maharashtra",
     plan: "Pro",
     status: "Active",
     currency: "INR",
     businessDetails: {
-      businessName: "Royal Fabrics & Weaving Pvt Ltd",
-      ownerName: "Rajesh Shah",
-      gstNumber: "24ABBCR5678G1ZP",
-      panNumber: "ABBCR5678G",
-      businessType: "Private Limited",
-      industry: "Jacquard & Synthetic Fabrics",
-      phone: "+91 98980 22334",
-      email: "admin@royalfabrics.com",
-      website: "www.royalfabricssurat.com",
-      addressLine1: "B-405, GIDC Industrial Estate",
-      addressLine2: "Sachin Area",
-      city: "Surat",
-      district: "Surat",
-      state: "Gujarat",
-      country: "India",
-      pincode: "394230",
-      currency: "INR",
-      timezone: "Asia/Kolkata",
-      businessDescription: "Premier Jacquard fabric weaving plant with 36 high-speed electronic Jacquard rapier looms for dress material and fancy sarees."
-    },
-    factoryDetails: {
-      factoryName: "Surat Jacquard Hub - Unit A",
-      factoryCode: "RF-01",
-      factoryType: "Electronic Jacquard Shed",
-      factoryAddress: "B-405, GIDC Industrial Estate, Sachin, Surat",
-      city: "Surat",
-      district: "Surat",
-      state: "Gujarat",
-      country: "India",
-      pincode: "394230",
-      factoryManager: "Rajesh Shah",
-      phone: "+91 98980 22334",
-      email: "admin@royalfabrics.com",
-      workingHours: "24 Hours (3 Shifts)",
-      shiftSystem: "3-Shift System (8 Hours each)",
-      morningShiftStart: "07:00 AM",
-      morningShiftEnd: "03:00 PM",
-      nightShiftStart: "11:00 PM",
-      nightShiftEnd: "07:00 AM",
-      totalLooms: 36,
-      factoryStatus: "Active"
-    },
-    financialYearDetails: {
-      financialYear: "2026-2027",
-      openingDate: "2026-04-01",
-      closingDate: "2027-03-31",
-      openingStockDate: "2026-04-01",
-      currency: "INR",
-      defaultTax: 12
-    },
-    units: [
-      {
-        id: "rf-unit-1",
-        name: "Surat Jacquard Hub (GIDC Sachin)",
-        code: "RF-U1",
-        type: "Jacquard Rapier Plant",
-        location: "GIDC Sachin, Surat",
-        status: "Operational",
-        totalLooms: 36
-      }
-    ],
-    users: [
-      {
-        id: "user-2",
-        name: "Rajesh Shah",
-        email: "admin@royalfabrics.com",
-        role: "Super Admin",
-        avatarUrl: "/images/avatars/03.png",
-        phone: "+91 98980 22334"
-      },
-      {
-        id: "user-2-mgr",
-        name: "Jignesh Patel",
-        email: "manager@royalfabrics.com",
-        role: "Mill Manager",
-        avatarUrl: "/images/avatars/02.png",
-        phone: "+91 98980 22335"
-      },
-      {
-        id: "user-2-prd",
-        name: "Ketan Solanki",
-        email: "production@royalfabrics.com",
-        role: "Production Head",
-        avatarUrl: "/images/avatars/04.png",
-        phone: "+91 98980 22336"
-      },
-      {
-        id: "user-2-act",
-        name: "Hardik Trivedi",
-        email: "accountant@royalfabrics.com",
-        role: "Accountant",
-        avatarUrl: "/images/avatars/05.png",
-        phone: "+91 98980 22337"
-      }
-    ]
-  },
-  {
-    id: "silverthread-denim",
-    name: "SilverThread Denim Mills",
-    slug: "silverthread-denim",
-    logo: "👖",
-    tagline: "Heavy Denim & Canvas Weaving Specialist",
-    cluster: "Bhiwandi, Maharashtra",
-    plan: "Standard",
-    status: "Active",
-    currency: "INR",
-    businessDetails: {
-      businessName: "SilverThread Denim Mills",
-      ownerName: "Amit Patel",
-      gstNumber: "27AACCB9988H1Z1",
-      panNumber: "AACCB9988H",
-      businessType: "Partnership",
-      industry: "Heavy Denim & Canvas",
-      phone: "+91 97654 33221",
-      email: "owner@silverthread.com",
-      website: "www.silverthreaddenim.com",
-      addressLine1: "Shed 12, Sonale Warehousing Complex",
-      addressLine2: "Bhiwandi Bypass",
-      city: "Bhiwandi",
-      district: "Thane",
+      businessName: "Lalit Textiles & Weaving Works",
+      ownerName: "Lalit Patil",
+      gstNumber: "27AABCL5678L1ZP",
+      panNumber: "AABCL5678L",
+      businessType: "Proprietorship",
+      industry: "Rapier & Airjet Weaving",
+      phone: "+91 99220 88990",
+      email: "owner@lalittextiles.com",
+      website: "www.lalittextiles.com",
+      addressLine1: "Plot No. 45, Powerloom Park",
+      addressLine2: "Kolhapur Road",
+      city: "Ichalkaranji",
+      district: "Kolhapur",
       state: "Maharashtra",
       country: "India",
-      pincode: "421302",
+      pincode: "416115",
       currency: "INR",
       timezone: "Asia/Kolkata",
-      businessDescription: "Specialized manufacturer of 12oz to 16oz indigo slub denim warp and heavy cotton twill canvas fabric."
+      businessDescription: "High-speed rapier and airjet weaving plant specializing in fine cotton fabric & export sheeting."
     },
     factoryDetails: {
-      factoryName: "Bhiwandi Denim Shed-1",
-      factoryCode: "ST-01",
-      factoryType: "Heavy Shuttleless Loom Plant",
-      factoryAddress: "Sonale Industrial Zone, Bhiwandi",
-      city: "Bhiwandi",
-      district: "Thane",
+      factoryName: "Lalit Textiles Weaving Shed-I",
+      factoryCode: "LT-01",
+      factoryType: "Rapier & Airjet Shed",
+      factoryAddress: "Plot No. 45, Powerloom Park, Ichalkaranji",
+      city: "Ichalkaranji",
+      district: "Kolhapur",
       state: "Maharashtra",
       country: "India",
-      pincode: "421302",
-      factoryManager: "Amit Patel",
-      phone: "+91 97654 33221",
-      email: "owner@silverthread.com",
+      pincode: "416115",
+      factoryManager: "Lalit Patil",
+      phone: "+91 99220 88990",
+      email: "owner@lalittextiles.com",
       workingHours: "24 Hours Continuous",
       shiftSystem: "2-Shift System (12 Hours each)",
       morningShiftStart: "08:00 AM",
       morningShiftEnd: "08:00 PM",
       nightShiftStart: "08:00 PM",
       nightShiftEnd: "08:00 AM",
-      totalLooms: 18,
+      totalLooms: 24,
       factoryStatus: "Active"
     },
     financialYearDetails: {
@@ -417,163 +254,23 @@ export const SEED_TENANTS: Tenant[] = [
     },
     units: [
       {
-        id: "st-unit-1",
-        name: "Bhiwandi Denim Complex",
-        code: "ST-U1",
-        type: "Shuttleless Heavy Shed",
-        location: "Sonale Zone, Bhiwandi",
+        id: "lt-unit-1",
+        name: "Lalit Textiles Main Shed",
+        code: "LT-U1",
+        type: "Rapier Shed",
+        location: "Powerloom Park, Ichalkaranji",
         status: "Operational",
-        totalLooms: 18
+        totalLooms: 24
       }
     ],
     users: [
       {
-        id: "user-3",
-        name: "Amit Patel",
-        email: "owner@silverthread.com",
-        role: "Super Admin",
-        avatarUrl: "/images/avatars/04.png",
-        phone: "+91 97654 33221"
-      },
-      {
-        id: "user-3-mgr",
-        name: "Deepak Sharma",
-        email: "manager@silverthread.com",
-        role: "Mill Manager",
-        avatarUrl: "/images/avatars/01.png",
-        phone: "+91 97654 33222"
-      },
-      {
-        id: "user-3-prd",
-        name: "Rakesh Verma",
-        email: "production@silverthread.com",
-        role: "Production Head",
-        avatarUrl: "/images/avatars/02.png",
-        phone: "+91 97654 33223"
-      },
-      {
-        id: "user-3-act",
-        name: "Manoj Gupta",
-        email: "accountant@silverthread.com",
-        role: "Accountant",
-        avatarUrl: "/images/avatars/05.png",
-        phone: "+91 97654 33224"
-      }
-    ]
-  },
-  {
-    id: "mahadev-weaving",
-    name: "Mahadev Spinning & Weaving",
-    slug: "mahadev-weaving",
-    logo: "🌐",
-    tagline: "Export Quality Fine Cotton & Grey Sheeting Mill",
-    cluster: "Coimbatore, Tamil Nadu",
-    plan: "Enterprise",
-    status: "Active",
-    currency: "INR",
-    businessDetails: {
-      businessName: "Mahadev Spinning & Weaving Mills Ltd",
-      ownerName: "Suresh Kumar",
-      gstNumber: "33AAACM1122K1Z9",
-      panNumber: "AAACM1122K",
-      businessType: "Public Limited",
-      industry: "Fine Cotton Export Fabrics",
-      phone: "+91 94430 88776",
-      email: "admin@mahadevweaving.com",
-      website: "www.mahadevweaving.com",
-      addressLine1: "105, Avinashi Road, Peelamedu",
-      addressLine2: "Textile Cluster",
-      city: "Coimbatore",
-      district: "Coimbatore",
-      state: "Tamil Nadu",
-      country: "India",
-      pincode: "641004",
-      currency: "INR",
-      timezone: "Asia/Kolkata",
-      businessDescription: "State-of-the-art export-oriented mill running 80s and 100s superfine combed cotton yarn weaving high thread count bed linen."
-    },
-    factoryDetails: {
-      factoryName: "Coimbatore Export Shed Alpha",
-      factoryCode: "MW-01",
-      factoryType: "Export Airjet Plant",
-      factoryAddress: "105 Avinashi Road, Peelamedu, Coimbatore",
-      city: "Coimbatore",
-      district: "Coimbatore",
-      state: "Tamil Nadu",
-      country: "India",
-      pincode: "641004",
-      factoryManager: "Suresh Kumar",
-      phone: "+91 94430 88776",
-      email: "admin@mahadevweaving.com",
-      workingHours: "24 Hours Continuous",
-      shiftSystem: "3-Shift System (8 Hours each)",
-      morningShiftStart: "06:00 AM",
-      morningShiftEnd: "02:00 PM",
-      nightShiftStart: "10:00 PM",
-      nightShiftEnd: "06:00 AM",
-      totalLooms: 30,
-      factoryStatus: "Active"
-    },
-    financialYearDetails: {
-      financialYear: "2026-2027",
-      openingDate: "2026-04-01",
-      closingDate: "2027-03-31",
-      openingStockDate: "2026-04-01",
-      currency: "INR",
-      defaultTax: 5
-    },
-    units: [
-      {
-        id: "mw-unit-1",
-        name: "Coimbatore Main Airjet Plant",
-        code: "MW-U1",
-        type: "High-speed Airjet",
-        location: "Peelamedu, Coimbatore",
-        status: "Operational",
-        totalLooms: 30
-      },
-      {
-        id: "mw-unit-2",
-        name: "Quality Control & Fabric Inspection Lab",
-        code: "MW-U2",
-        type: "Inspection & Folding",
-        location: "Peelamedu, Coimbatore",
-        status: "Operational",
-        totalLooms: 0
-      }
-    ],
-    users: [
-      {
-        id: "user-4",
-        name: "Suresh Kumar",
-        email: "admin@mahadevweaving.com",
-        role: "Super Admin",
-        avatarUrl: "/images/avatars/05.png",
-        phone: "+91 94430 88776"
-      },
-      {
-        id: "user-4-mgr",
-        name: "Karthik Subramanian",
-        email: "manager@mahadevweaving.com",
-        role: "Mill Manager",
-        avatarUrl: "/images/avatars/01.png",
-        phone: "+91 94430 88777"
-      },
-      {
-        id: "user-4-prd",
-        name: "Ramesh Natarajan",
-        email: "production@mahadevweaving.com",
-        role: "Production Head",
-        avatarUrl: "/images/avatars/02.png",
-        phone: "+91 94430 88778"
-      },
-      {
-        id: "user-4-act",
-        name: "Sundar Rajan",
-        email: "accountant@mahadevweaving.com",
-        role: "Accountant",
+        id: "user-lt-owner",
+        name: "Lalit Patil",
+        email: "owner@lalittextiles.com",
+        role: "Factory Owner",
         avatarUrl: "/images/avatars/03.png",
-        phone: "+91 94430 88779"
+        phone: "+91 99220 88990"
       }
     ]
   }
@@ -605,12 +302,12 @@ interface TenantState {
 }
 
 export const useTenantStore = create<TenantState>()(
-  persist(
+  persist<TenantState, [], [], TenantState>(
     (set, get) => ({
       tenants: SEED_TENANTS,
       activeTenantId: "dhandai-textiles",
       activeUnitId: "dt-unit-1",
-      currentUser: SEED_TENANTS[0].users[0],
+      currentUser: SEED_TENANTS[0].users[0] as TenantUser | null,
       isAuthenticated: true,
       isGlobalSuperAdmin: false,
       isHydrated: false,
@@ -683,7 +380,11 @@ export const useTenantStore = create<TenantState>()(
         // Check for Global Super Admin login
         if (normalized === "superadmin@dks-erp.com" || normalized === "superadmin") {
           get().loginSuperAdmin();
-          return { success: true, tenantName: "Global SaaS Control Center", isSuperAdmin: true, role: "Global Super Admin" };
+          return {
+            success: true,
+            tenantName: "Global SaaS Control Center",
+            isSuperAdmin: true, role: "Global Super Admin"
+          };
         }
 
         let targetTenant: Tenant | undefined;
@@ -699,16 +400,8 @@ export const useTenantStore = create<TenantState>()(
         }
 
         if (!targetTenant) {
-          if (normalized.includes("royal")) targetTenant = get().tenants.find((t) => t.id === "royal-fabrics");
-          else if (normalized.includes("silver")) targetTenant = get().tenants.find((t) => t.id === "silverthread-denim");
-          else if (normalized.includes("mahadev")) targetTenant = get().tenants.find((t) => t.id === "mahadev-weaving");
-          else targetTenant = get().tenants[0];
-
-          // Check if specific role was passed in email prefix
-          if (normalized.includes("manager")) targetUser = targetTenant?.users.find((u) => u.role === "Mill Manager");
-          else if (normalized.includes("production")) targetUser = targetTenant?.users.find((u) => u.role === "Production Head");
-          else if (normalized.includes("accountant")) targetUser = targetTenant?.users.find((u) => u.role === "Accountant");
-          else targetUser = targetTenant?.users[0];
+          targetTenant = get().tenants[0];
+          targetUser = targetTenant?.users[0];
         }
 
         if (targetTenant && targetUser) {
@@ -814,12 +507,13 @@ export const useTenantStore = create<TenantState>()(
       setHydrated: (val: boolean) => set({ isHydrated: val })
     }),
     {
-      name: "dks-multi-tenant-store",
-      onRehydrateStorage: () => (state) => {
+      name: "dks-multi-tenant-store-v5",
+      onRehydrateStorage: () => (state?: TenantState) => {
         if (state) {
           state.setHydrated(true);
+          state.tenants = SEED_TENANTS;
           // Sync ERP Store on hydration
-          const currentTenant = state.tenants.find((t) => t.id === state.activeTenantId) || state.tenants[0];
+          const currentTenant = SEED_TENANTS.find((t) => t.id === state.activeTenantId) || SEED_TENANTS[0];
           if (currentTenant) {
             const erpStore = useERPStore.getState();
             erpStore.setBusinessDetails(currentTenant.businessDetails);
@@ -829,5 +523,5 @@ export const useTenantStore = create<TenantState>()(
         }
       }
     }
-  )
+  ) as any
 );

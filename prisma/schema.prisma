@@ -1,0 +1,205 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role {
+  GLOBAL_SUPER_ADMIN
+  BUSINESS_OWNER
+  MILL_MANAGER
+  PRODUCTION_HEAD
+  ACCOUNTANT
+  SUPERVISOR
+}
+
+model Tenant {
+  id              String    @id @default(cuid())
+  name            String
+  slug            String    @unique
+  logo            String?   @default("🏭")
+  tagline         String?
+  cluster         String?
+  plan            String    @default("Enterprise")
+  status          String    @default("Active")
+  currency        String    @default("INR")
+  ownerName       String
+  gstNumber       String?
+  panNumber       String?
+  phone           String
+  email           String
+  addressLine1    String
+  city            String
+  state           String
+  pincode         String
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  users           User[]
+  factories       Factory[]
+  looms           Loom[]
+  parties         Party[]
+  labour          Labour[]
+  yarns           Yarn[]
+  fabrics         Fabric[]
+}
+
+model User {
+  id            String    @id @default(cuid())
+  tenantId      String?
+  tenant        Tenant?   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  email         String    @unique
+  passwordHash  String
+  name          String
+  role          Role      @default(BUSINESS_OWNER)
+  avatarUrl     String?
+  phone         String?
+  isSuperAdmin  Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([tenantId])
+}
+
+model Factory {
+  id              String    @id @default(cuid())
+  tenantId        String
+  tenant          Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  factoryId       String
+  factoryName     String
+  ownerName       String
+  plotNo          String?
+  addressLine1    String
+  cityVillage     String
+  taluka          String?
+  district        String
+  state           String
+  pincode         String
+  shedLength      Float?
+  shedWidth       Float?
+  totalArea       Float?
+  shedType        String    @default("RCC")
+  contactNumber   String
+  email           String?
+  activeStatus    String    @default("Active")
+  notes           String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  looms           Loom[]
+
+  @@index([tenantId])
+}
+
+model Loom {
+  id              String    @id @default(cuid())
+  tenantId        String
+  tenant          Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  loomId          String
+  factoryId       String
+  factory         Factory   @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  factoryName     String
+  loomNumber      String
+  loomType        String
+  reedCount       Int       @default(120)
+  widthInches     Int       @default(60)
+  rpmSpeed        Int       @default(680)
+  makeBrand       String?
+  yearOfPurchase  Int?
+  status          String    @default("Active")
+  remarks         String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([tenantId])
+  @@index([factoryId])
+}
+
+model Party {
+  id              String    @id @default(cuid())
+  tenantId        String
+  tenant          Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  partyCode       String
+  partyName       String
+  partyType       String
+  contactPerson   String?
+  mobileNumber    String
+  gstNumber       String?
+  panNumber       String?
+  address         String
+  openingBalance  Float     @default(0)
+  activeStatus    String    @default("Active")
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([tenantId])
+}
+
+model Labour {
+  id                String    @id @default(cuid())
+  tenantId          String
+  tenant            Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  labourId          String
+  fullName          String
+  labourType        String
+  linkedFactoryId   String?
+  linkedFactoryName String?
+  linkedLoomId      String?
+  linkedLoomNumber  String?
+  mobileNumber      String
+  joiningDate       String
+  rateType          String
+  rate              Float
+  activeStatus      String    @default("Active")
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([tenantId])
+}
+
+model Yarn {
+  id            String    @id @default(cuid())
+  tenantId      String
+  tenant        Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  yarnCode      String
+  yarnName      String
+  material      String
+  count         String
+  brand         String
+  color         String
+  unit          String    @default("KG")
+  rate          Float
+  gst           Float     @default(12)
+  status        String    @default("Active")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([tenantId])
+}
+
+model Fabric {
+  id            String    @id @default(cuid())
+  tenantId      String
+  tenant        Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  fabricCode    String
+  fabricName    String
+  construction  String
+  width         Float
+  gsm           Float
+  warp          String
+  weft          String
+  pick          Int
+  ends          Int
+  quality       String
+  unit          String    @default("Meters")
+  description   String?
+  status        String    @default("Active")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([tenantId])
+}

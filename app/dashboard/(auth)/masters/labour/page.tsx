@@ -52,8 +52,11 @@ const labourSchema = z.object({
 
 type LabourFormValues = z.infer<typeof labourSchema>;
 
+import { useTenantStore } from "@/lib/store/use-tenant-store";
+
 export default function LabourPage() {
   const queryClient = useQueryClient();
+  const { activeTenantId } = useTenantStore();
   const [searchValue, setSearchValue] = useState("");
   const [selectedFilters, setSelectedFilters] = useState<Record<string, string>>({ labourType: "all", linkedFactoryId: "all", activeStatus: "all" });
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -62,9 +65,9 @@ export default function LabourPage() {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Labour | null>(null);
 
-  const { data: labour = [], isLoading } = useQuery({ queryKey: ["labour"], queryFn: () => mastersApiService.getLabour() });
-  const { data: factories = [] } = useQuery({ queryKey: ["factories"], queryFn: () => mastersApiService.getFactories() });
-  const { data: looms = [] } = useQuery({ queryKey: ["looms"], queryFn: () => mastersApiService.getLooms() });
+  const { data: labour = [], isLoading } = useQuery({ queryKey: ["labour", activeTenantId], queryFn: () => mastersApiService.getLabour() });
+  const { data: factories = [] } = useQuery({ queryKey: ["factories", activeTenantId], queryFn: () => mastersApiService.getFactories() });
+  const { data: looms = [] } = useQuery({ queryKey: ["looms", activeTenantId], queryFn: () => mastersApiService.getLooms() });
 
   const defaultValues: LabourFormValues = {
     fullName: "", labourType: "Weaver", linkedFactoryId: "", linkedFactoryName: "",

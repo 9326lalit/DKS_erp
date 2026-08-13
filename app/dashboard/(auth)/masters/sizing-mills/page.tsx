@@ -44,8 +44,11 @@ const millSchema = z.object({
 
 type FormValues = z.infer<typeof millSchema>;
 
+import { useTenantStore } from "@/lib/store/use-tenant-store";
+
 export default function SizingMillsPage() {
   const queryClient = useQueryClient();
+  const { activeTenantId } = useTenantStore();
   const [searchValue, setSearchValue] = useState("");
   const [selectedFilters, setSelectedFilters] = useState<Record<string, string>>({ activeStatus: "all" });
   
@@ -57,7 +60,7 @@ export default function SizingMillsPage() {
   const [deleteTarget, setDeleteTarget] = useState<SizingMill | null>(null);
 
   const { data: mills = [], isLoading } = useQuery({
-    queryKey: ["sizingMills"],
+    queryKey: ["sizingMills", activeTenantId],
     queryFn: () => mastersApiService.getSizingMills()
   });
 

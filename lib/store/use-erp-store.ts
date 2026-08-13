@@ -171,7 +171,23 @@ export const useERPStore = create<ERPState>()(
   )
 );
 
-// Helper helper to get values or fallback defaults (for easy demo seeding)
-export const getSeedBusiness = () => DEFAULT_BUSINESS;
-export const getSeedFactory = () => DEFAULT_FACTORY;
-export const getSeedFY = () => DEFAULT_FY;
+import { useTenantStore } from "@/lib/store/use-tenant-store";
+
+// Helper helper to get values or fallback defaults dynamically from active tenant
+export const getSeedBusiness = (): BusinessDetails => {
+  const state = useTenantStore.getState();
+  const activeTenant = state.tenants.find((t) => t.id === state.activeTenantId) || state.tenants[0];
+  return activeTenant ? activeTenant.businessDetails : DEFAULT_BUSINESS;
+};
+
+export const getSeedFactory = (): FactoryDetails => {
+  const state = useTenantStore.getState();
+  const activeTenant = state.tenants.find((t) => t.id === state.activeTenantId) || state.tenants[0];
+  return activeTenant ? activeTenant.factoryDetails : DEFAULT_FACTORY;
+};
+
+export const getSeedFY = (): FinancialYearDetails => {
+  const state = useTenantStore.getState();
+  const activeTenant = state.tenants.find((t) => t.id === state.activeTenantId) || state.tenants[0];
+  return activeTenant ? activeTenant.financialYearDetails : DEFAULT_FY;
+};

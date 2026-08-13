@@ -323,11 +323,11 @@ const buildSeeds = () => {
   ];
 
   return {
-    purchaseOrders: seededPOs,
-    grns: seededGRNs,
-    invoices: seededPIs,
-    rawStockBags: 70, // initial stock: 50 received - 30 issued to sizing = 20, + 20 from GRN-2 = 40... simplified to 70 for demo
-    rawStockWeightKg: 3500
+    purchaseOrders: [],
+    grns: [],
+    invoices: [],
+    rawStockBags: 0,
+    rawStockWeightKg: 0
   };
 };
 
@@ -360,11 +360,11 @@ export const useTanaStore = create<TanaState>()(
       createPO: (po) => set((state) => ({ purchaseOrders: [po, ...state.purchaseOrders] })),
       updatePO: (po) =>
         set((state) => ({
-          purchaseOrders: state.purchaseOrders.map((x) => (x.id === po.id ? po : x))
+          purchaseOrders: state.purchaseOrders.map((p) => (p.id === po.id ? po : p))
         })),
       deletePO: (id) =>
         set((state) => ({
-          purchaseOrders: state.purchaseOrders.filter((x) => x.id !== id)
+          purchaseOrders: state.purchaseOrders.filter((p) => p.id !== id)
         })),
 
       // GRN CRUD — updates PO status and stock
@@ -373,11 +373,12 @@ export const useTanaStore = create<TanaState>()(
           // Update PO bags received
           const updatedPOs = state.purchaseOrders.map((po) => {
             if (po.id === grn.linkedPOId) {
-              const newTotal = po.bagsReceivedSoFar + grn.bagsReceivedThisGRN;
-              const newStatus: TanaPO["status"] =
-                newTotal >= po.totalBagsOrdered ? "Closed" :
-                newTotal > 0 ? "Partially Received" : "Open";
-              return { ...po, bagsReceivedSoFar: newTotal, status: newStatus };
+              const newBags = po.bagsReceivedSoFar + grn.bagsReceivedThisGRN;
+              return {
+                ...po,
+                bagsReceivedSoFar: newBags,
+                status: newBags >= po.totalBagsOrdered ? ("Closed" as const) : ("Partially Received" as const)
+              };
             }
             return po;
           });
@@ -391,46 +392,24 @@ export const useTanaStore = create<TanaState>()(
         });
       },
 
-      updateGRN: (grn) => {
-        set((state) => {
-          const oldGrn = state.grns.find(g => g.id === grn.id);
-          if (!oldGrn) return {};
-          
-          const bagDiff = grn.bagsReceivedThisGRN - oldGrn.bagsReceivedThisGRN;
-          const weightDiff = grn.totalWeightReceived - oldGrn.totalWeightReceived;
-
-          const updatedPOs = state.purchaseOrders.map((po) => {
-            if (po.id === grn.linkedPOId) {
-              const newTotal = Math.max(0, po.bagsReceivedSoFar + bagDiff);
-              const newStatus: TanaPO["status"] =
-                newTotal >= po.totalBagsOrdered ? "Closed" :
-                newTotal > 0 ? "Partially Received" : "Open";
-              return { ...po, bagsReceivedSoFar: newTotal, status: newStatus };
-            }
-            return po;
-          });
-
-          return {
-            grns: state.grns.map((x) => (x.id === grn.id ? grn : x)),
-            purchaseOrders: updatedPOs,
-            rawStockBags: Math.max(0, state.rawStockBags + bagDiff),
-            rawStockWeightKg: Math.max(0, state.rawStockWeightKg + weightDiff)
-          };
-        });
-      },
+      updateGRN: (grn) =>
+        set((state) => ({
+          grns: state.grns.map((g) => (g.id === grn.id ? grn : g))
+        })),
 
       deleteGRN: (id) => {
         set((state) => {
           const grn = state.grns.find((g) => g.id === id);
-          if (!grn) return {};
+          if (!grn) return state;
 
           const updatedPOs = state.purchaseOrders.map((po) => {
             if (po.id === grn.linkedPOId) {
-              const newTotal = Math.max(0, po.bagsReceivedSoFar - grn.bagsReceivedThisGRN);
-              const newStatus: TanaPO["status"] =
-                newTotal >= po.totalBagsOrdered ? "Closed" :
-                newTotal > 0 ? "Partially Received" : "Open";
-              return { ...po, bagsReceivedSoFar: newTotal, status: newStatus };
+              const newBags = Math.max(0, po.bagsReceivedSoFar - grn.bagsReceivedThisGRN);
+              return {
+                ...po,
+                bagsReceivedSoFar: newBags,
+                status: newBags === 0 ? ("Open" as const) : ("Partially Received" as const)
+              };
             }
             return po;
           });
@@ -468,13 +447,11 @@ export const useTanaStore = create<TanaState>()(
         }))
     }),
     {
-      name: "dks-textile-erp-tana",
+      name: "dks-textile-erp-tana-v5",
       onRehydrateStorage: () => (state) => {
         if (state) {
           state.setHydrated(true);
-          if (state.purchaseOrders.length === 0) {
-            state.initializeSeeds();
-          }
+          state.initializeSeeds();
         }
       }
     }

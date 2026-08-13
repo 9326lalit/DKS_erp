@@ -2,6 +2,7 @@
 // Integrates with Zustand store and Mock Data Generator
 
 import { getMockData, Loom, ProductionRecord, SalesRecord, ExpenseRecord, YarnLot, Beam } from "@/lib/mock/data-generator";
+export { getMockData };
 import { useERPStore, BusinessDetails, FactoryDetails, FinancialYearDetails } from "@/lib/store/use-erp-store";
 import { useTenantStore } from "@/lib/store/use-tenant-store";
 

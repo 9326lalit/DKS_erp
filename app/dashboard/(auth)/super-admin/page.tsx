@@ -100,13 +100,6 @@ export default function SuperAdminPortalPage() {
     );
   });
 
-  const handleSwitchAndNavigate = (tenantId: string) => {
-    setActiveTenant(tenantId);
-    const tenant = tenants.find((t) => t.id === tenantId);
-    toast.success(`Impersonating Tenant: ${tenant?.name || tenantId}`);
-    router.push("/dashboard");
-  };
-
   const handleCreateTenant = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMillName || !newEmail) {
@@ -219,10 +212,10 @@ export default function SuperAdminPortalPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2 border-b border-border">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <Badge className="bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-500/30 gap-1 px-3 py-1 font-bold">
-              <Crown className="h-4 w-4" /> Global Platform Super Admin
+            <Badge className="bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30 gap-1.5 px-3 py-1 font-bold">
+              <Crown className="h-4 w-4 text-amber-500" /> Global SaaS Control Center
             </Badge>
-            <Badge variant="outline" className="text-xs text-emerald-600 border-emerald-500/40">SaaS Live</Badge>
+            <Badge variant="outline" className="text-xs text-emerald-600 border-emerald-500/40 font-semibold">Platform Admin Live</Badge>
           </div>
           <h1 className="text-2xl lg:text-3xl font-extrabold tracking-tight font-display text-foreground">
             SaaS Tenant Control Center & Business Directory
@@ -440,15 +433,7 @@ export default function SuperAdminPortalPage() {
                             className="h-8 px-2 text-xs gap-1 cursor-pointer"
                             title="View Full Business Details"
                           >
-                            <Eye className="h-3.5 w-3.5 text-blue-500" /> Full Info
-                          </Button>
-
-                          <Button
-                            size="sm"
-                            onClick={() => handleSwitchAndNavigate(t.id)}
-                            className="h-8 px-2.5 text-xs bg-emerald-600 hover:bg-emerald-500 text-white gap-1 cursor-pointer"
-                          >
-                            <ArrowUpRight className="h-3.5 w-3.5" /> Impersonate
+                            <Eye className="h-3.5 w-3.5 text-blue-500" /> Full Specs
                           </Button>
 
                           <DropdownMenu>
@@ -643,11 +628,14 @@ export default function SuperAdminPortalPage() {
                 <Button
                   onClick={() => {
                     setIsViewDetailsOpen(false);
-                    handleSwitchAndNavigate(selectedTenant.id);
+                    setEditGst(selectedTenant.businessDetails.gstNumber);
+                    setEditPan(selectedTenant.businessDetails.panNumber);
+                    setEditPhone(selectedTenant.businessDetails.phone);
+                    setIsEditOpen(true);
                   }}
-                  className="bg-emerald-600 hover:bg-emerald-500 text-white"
+                  className="bg-emerald-600 hover:bg-emerald-500 text-white gap-1.5"
                 >
-                  Impersonate & Open Dashboard →
+                  <Edit className="h-3.5 w-3.5" /> Edit Business Specs
                 </Button>
               </DialogFooter>
             </>

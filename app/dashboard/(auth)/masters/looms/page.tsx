@@ -22,6 +22,8 @@ import { Badge } from "@/components/ui/badge";
 
 import { useRouter } from "next/navigation";
 
+import { useTenantStore } from "@/lib/store/use-tenant-store";
+
 interface FactoryRowData {
   id: string;
   factoryId: string;
@@ -37,14 +39,15 @@ interface FactoryRowData {
 export default function LoomsPage() {
   const router = useRouter();
   const [searchValue, setSearchValue] = useState("");
+  const { activeTenantId } = useTenantStore();
 
   const { data: looms = [], isLoading: loadingLooms } = useQuery({
-    queryKey: ["looms"],
+    queryKey: ["looms", activeTenantId],
     queryFn: () => mastersApiService.getLooms()
   });
 
   const { data: factories = [], isLoading: loadingFactories } = useQuery({
-    queryKey: ["factories"],
+    queryKey: ["factories", activeTenantId],
     queryFn: () => mastersApiService.getFactories()
   });
 
@@ -131,7 +134,7 @@ export default function LoomsPage() {
     <PageContainer>
       <PageHeader
         title="Loom Master & Weaving Units"
-        description="Master administrative registry for Weaving Firms (Dhandai Textiles 36 Looms, Lalit Textiles 12 Looms). Click any firm row to view its complete By-ID loom file."
+        description="Master administrative registry for Weaving Firms (Dhandai Textiles 36 Looms, Lalit Textiles 12 Looms. Click any firm row to view its complete By-ID loom file."
         breadcrumbs={[
           { title: "Dashboard", href: "/dashboard/default" },
           { title: "Masters" },

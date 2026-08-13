@@ -53,9 +53,12 @@ const fabricFormSchema = z.object({
 
 type FabricFormValues = z.infer<typeof fabricFormSchema>;
 
+import { useTenantStore } from "@/lib/store/use-tenant-store";
+
 export default function FabricsPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { activeTenantId } = useTenantStore();
 
   // Search & Filter state
   const [searchValue, setSearchValue] = useState("");
@@ -74,7 +77,7 @@ export default function FabricsPage() {
 
   // TanStack Queries & Mutations
   const { data: fabrics = [], isLoading, refetch } = useQuery({
-    queryKey: ["fabrics"],
+    queryKey: ["fabrics", activeTenantId],
     queryFn: () => mastersApiService.getFabrics()
   });
 
