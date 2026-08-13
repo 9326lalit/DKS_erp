@@ -9,9 +9,13 @@
     "lint": "eslint app components lib",
     "type-check": "tsc --noEmit",
     "audit": "npm run lint && npm run type-check",
+    "db:generate": "npx prisma generate",
+    "db:push": "npx prisma db push",
+    "db:migrate": "npx prisma db push",
     "db:reset": "npx tsx prisma/seed.ts",
     "db:seed": "npx tsx prisma/seed.ts",
     "seed": "npx tsx prisma/seed.ts",
+    "postinstall": "npx prisma generate",
     "prepare": "node -e \"try { require('child_process').execSync('npx husky', { stdio: 'inherit' }) } catch (e) {}\""
   },
   "prisma": {
